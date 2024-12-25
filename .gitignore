@@ -1,3 +1,4 @@
 /.env
 /boscobot.code-workspace
 /__pycache__
+/cogs/__pycache__
