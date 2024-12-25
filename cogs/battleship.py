@@ -1,10 +1,9 @@
-import asyncio
 import discord
+import random
 import re
 import typing
 
 from discord.ext import commands
-import random
 
 OPEN = ""
 
@@ -34,7 +33,7 @@ class Player():
         self.board.random_place_ships(self.fleet)
 
     def is_defeated(self):
-        return all(ship.sunk == True for ship in self.fleet)
+        return all(ship.sunk for ship in self.fleet)
 
 
 class Board():
@@ -112,9 +111,9 @@ class Game:
                 
             attacker.tracking_board.grid[y][x] = "H"
             return True, ship.sunk
-        else:
-            attacker.tracking_board.grid[y][x] = "M"
-            return False, False
+        
+        attacker.tracking_board.grid[y][x] = "M"
+        return False, False
         
     def is_over(self):
         return self.player_1.is_defeated() or self.player_2.is_defeated()
@@ -146,27 +145,27 @@ class BattleShip(commands.Cog):
 
         try:
             await player_1.member.send(f"Your board:\n```{player_1.board.__str__()}```")
-            
+
             if not bot_player:
                 await player_2.member.send(f"Your board:\n```{player_2.board.__str__()}```")
             else:
                 await ctx.send("The bot is ready! Let the battle begin!")
                 print(player_2.board)
-        
+
         except discord.errors.Forbidden:
             await ctx.send(f"""Could not send the game boards to {player_1.member.mention} or
                 {player_2.member.mention}. Please check your DM settings.""")
         
         # while not game.is_over():
         #     pass
-    
-    async def is_move_valid(move: str):
+        
+    async def is_move_valid(self, move: str):
         if not move:
             return False
-        
+
         pattern = r'[a-jA-J][1-9]10$'
         return re.match(pattern, move)
-    
+
     @commands.hybrid_command(name='attack')
     async def attack(self, ctx, move: str):
         game = self.player_games.get(ctx.author.id)

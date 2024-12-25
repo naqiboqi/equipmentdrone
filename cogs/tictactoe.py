@@ -1,5 +1,3 @@
-import asyncio
-import datetime
 import discord
 
 from discord.ext import commands
@@ -57,7 +55,7 @@ class TTT(commands.Cog):
         if self.boards.get(ctx.message.guild.id) is not None:
             return await ctx.send("You can only play one game at a time.")
 
-        self.boards[ctx.guild.id] = Board(p2)
+        self.boards[ctx.guild.id] = Board(p1, p2)
 
 
 async def setup(bot):

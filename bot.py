@@ -11,6 +11,7 @@ from misc import status
 
 
 class MyBot(commands.Bot):
+    """Initialize the bot and it's starting attributes."""
     def __init__(self):
         super().__init__(command_prefix="!", intents=discord.Intents.all())
         self.inital_extensions = [
@@ -33,13 +34,14 @@ class MyBot(commands.Bot):
         
     @tasks.loop(minutes=10)
     async def background_task(self):
+        """Essentially just a heartbeat print."""
         print("Running background task")
         
     async def on_ready(self):
         print(F"\n{self.user.name} is now online!")
         
         while True:
-            game_status = await status.chooseGame()
+            game_status = await status.choose_game()
             await self.change_presence(activity = discord.Game(name=game_status))
             await asyncio.sleep(7200)   
 
@@ -53,3 +55,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    

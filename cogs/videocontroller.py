@@ -1,3 +1,70 @@
+"""
+This module implements a video player cog for a Discord bot, designed to manage video playback
+and user interaction within a server (guild). It utilizes the `discord.py` library to
+interact with Discord APIs, providing functionality for media playback, queue management,
+and detailed playback embeds.
+
+Key Features:
+- **Video Playback**:
+    - Manage playback of queued video sources.
+    - Support for pausing, resuming, looping, and volume control.
+    - Handling of YouTube video links and playlists.
+
+- **Queue Management**:
+    - Manage a queue of `Video` objects for seamless playback.
+    - Add videos to the front of the queue or in order of requests.
+    - Skip to the next video or replay videos in the queue.
+
+- **Embed Generation**:
+    - Generate real-time playback embeds displaying:
+        - Video title, URL, and thumbnail.
+        - Playback progress with a dynamic progress bar.
+        - Volume level and requester information.
+    - Update playback embeds as the video progresses.
+
+- **Asynchronous Operations**:
+    - Utilize `asyncio` for non-blocking queue and playback handling.
+    - Manage playback state and elapsed time tracking efficiently.
+
+### Classes:
+- **`VideoController`**:
+    Manages video playback in a Discord guild. Handles:
+    - Playback control (start, pause, resume, loop).
+    - Queue operations and embed updates.
+    - Resource cleanup upon playback end.
+
+### Methods in `VideoController`:
+- **`__init__(bot)`**:
+    Initializes the controller with the bot instance,
+    creating necessary attributes like queue, volume, and embeds.
+
+- **`play_video(ctx, url_or_name)`**:
+    Starts playback of a video from a given URL or search query.
+
+- **`timer(start_time)`**:
+    Tracks elapsed playback time and updates the playback embed.
+
+- **`show_video_details(video)`**:
+    Creates or updates the embed showing current video playback details.
+
+- **`add_to_front_queue(video)`**:
+    Adds a new video source to the front of the playback queue.
+
+- **`player_loop()`**:
+    Main loop for managing video playback, processing the queue, and handling playback events.
+
+- **`destroy(guild)`**:
+    Cleans up resources and disconnects the controller from the guild.
+
+### Dependencies:
+- **`discord`**: For interacting with Discord APIs and sending embeds.
+- **`asyncio`**: For asynchronous event handling and queue management.
+- **`pytube`**: For downloading and processing YouTube videos.
+- **`itertools`**: For creating and managing queues.
+- **`typing`**: For type hinting and function signatures.
+"""
+
+
 import aiohttp
 import discord
 import datetime
@@ -35,16 +102,16 @@ class VideoController(commands.Cog):
         """Cleans up the server's player and the ffmpeg client."""
         if ctx is None:
             ctx = self.player_ctx
-            
+
         player = self.get_player(ctx)
         player.loop = False
-        player.queue._queue = []    
-        
+        player.queue._queue = [] 
+
         try:
             await guild.voice_client.disconnect()
         except AttributeError as e:
             print(e)
-        
+
         try:
             del self.players[guild.id]
         except KeyError as e:
@@ -64,7 +131,7 @@ class VideoController(commands.Cog):
             self.players[ctx.guild.id] = player
 
         return player
-    
+
     @commands.hybrid_command(name='join', aliases=['connect'])
     async def connect_(self, ctx):
         """Connects the bot to the voice channel of the user who invoked the command.
@@ -74,7 +141,7 @@ class VideoController(commands.Cog):
         if ctx.author.voice:
             channel = ctx.message.author.voice.channel
             await channel.connect()
-            
+
     @commands.hybrid_command(name='play')
     async def play_(self, ctx, *, video_search: str):
         """Adds the video(s) to the end of the queue,
@@ -88,28 +155,28 @@ class VideoController(commands.Cog):
         vc = ctx.voice_client
         if not vc:
             await ctx.invoke(self.connect_)
-            
+
         if not video_search:
             return await ctx.send(
                 "Please provide a video to look for.",
                 delete_after=10)
-        
+
         player = self.get_player(ctx)
         self.player_ctx = ctx
-        
+
         # Need to defer, as Discord will invalidate the interaction if it takes more
         # than 3 seconds to respond to the command.
         await ctx.defer()
-        
+
         playlist_flag = "playlist?list=" in video_search
         seek_time = int(video_search.split("&t=")[-1]) if "&t=" in video_search else 0
-        
+
         try:
             if playlist_flag:
                 await self.add_playlist_to_queue(ctx, player, video_search)
             else:
                 await self.add_video_to_queue(ctx, player, video_search, seek_time)
-        
+
         # A likely result if the playlist is privated.
         except Exception as e:
             await ctx.send(f"An error occurred: {e}", delete_after=10)
@@ -127,10 +194,10 @@ class VideoController(commands.Cog):
         playlist = pytube.Playlist(playlist_url)
         sources = await video.Video.get_sources(
             ctx=ctx, playlist=playlist, loop=self.bot.loop, download=False)
-        
+
         for source in sources:
             await player.queue.put(source)
-        
+
         await ctx.send(
             f"Added {len(playlist)} videos from **{playlist.title}** to the queue.",
             delete_after=10)
@@ -149,36 +216,36 @@ class VideoController(commands.Cog):
             loop=self.bot.loop, 
             download=False, 
             seek_time=seek_time)
-        
+
         await player.queue.put(source)
         await ctx.send(f"Added {source.title} to the queue.", delete_after=10)
-        
+
     @commands.hybrid_command(name='now')
     async def now_playing_(self, ctx):
         """Sends a embed showing the current details of the player."""
         vc = ctx.voice_client
         player = self.get_player(ctx)
-        
+
         if not vc or not vc.is_connected:
             return await ctx.send(
                 "I am not currently playing anything!",
                 delete_after=10)
-        
+
         if player.now_playing_embed is not None:
             await player.now_playing_embed.delete()
             now_playing_embed = await player.current.display()
             player.now_playing_embed = await ctx.send(embed=now_playing_embed)
-    
+
     @commands.hybrid_command(name='pause')
     async def pause_(self, ctx):
         """Pauses or unpauses the current video."""
         vc = ctx.voice_client
         player = self.get_player(ctx)
-        
+
         if not vc or not vc.is_connected():
             return await ctx.send(
                 "I am not currently playing anything!", delete_after=10)
-        
+
         if player.paused:
             vc.resume()
             player.paused = False
@@ -187,7 +254,7 @@ class VideoController(commands.Cog):
             vc.pause()
             player.paused = True
             await ctx.send("Paused", delete_after=10)
-            
+
     @commands.hybrid_command(name='lyrics', aliases=['lyric'])
     async def lyrics_(self, ctx, *, name: typing.Optional[str]):
         """Gets the lyrics for the currently video, or
@@ -197,25 +264,25 @@ class VideoController(commands.Cog):
         """
         vc = ctx.voice_client
         name = name or vc.source.title
-        
+
         async with ctx.typing():
             async with aiohttp.request("GET", LYRICS_URL + name, headers={}) as response:
                 if (not 200 <= response.status <= 299
                 or response.content_type != "application/json"):
                     return await ctx.send("No lyrics found.")
-                    
+
                 data = await response.json()
                 try:
                     if len(data['lyrics']) > 2000:
                         await ctx.send(f"<{data['links']['genius']}>")
                 except KeyError:
                     return await ctx.send("Couldn't find the lyrics for this video.")
-                    
+
                 lyrics_embed = discord.Embed(
                     title=data["title"],
                     description=data["lyrics"],
                     color=0xa84300)
-                
+
                 lyrics_embed.set_thumbnail(url=data['thumbnail']['genius'])
                 lyrics_embed.set_author(name=f"{data['author']}")
                 await ctx.send(embed=lyrics_embed)
@@ -245,7 +312,7 @@ class VideoController(commands.Cog):
             color=0x206694)
 
         await ctx.send(embed=queue_embed)
-        
+
     @commands.hybrid_command(name='removevideo', aliases=['r'])
     async def remove_(self, ctx, *, spot: int):
         """Removes a video at the given spot in the queue.
@@ -261,11 +328,11 @@ class VideoController(commands.Cog):
             return await ctx.send(
                 f"There is no video at spot {spot} in the queue.",
                 delete_after=10)
-        
+
         await ctx.send(
             f"Removed `{video_title}` from spot {spot} in the queue.", 
             delete_after=10)    
-        
+
     @commands.hybrid_command(name='shuffle')
     async def shuffle_(self, ctx):
         """Shuffles the queue. Has no affect on the currently playing video."""
@@ -273,7 +340,7 @@ class VideoController(commands.Cog):
         videos = player.queue._queue
         shuffle(videos)
         await ctx.send("Shuffled.", delete_after=10)
-        
+
     @commands.hybrid_command(name='skip')
     async def skip_(self, ctx):
         """Skips the currently playing video."""
@@ -286,7 +353,7 @@ class VideoController(commands.Cog):
 
         vc.stop()
         await ctx.send("Skipped the video.", delete_after=10)
-        
+
     @commands.hybrid_command(name='stop')
     async def stop_(self, ctx):
         """Stops the currently playing video and cleans up the player."""
@@ -296,7 +363,7 @@ class VideoController(commands.Cog):
 
         await self.cleanup(ctx.guild, ctx)
         await ctx.send("Stopped the video.", delete_after=10)
-        
+
     @commands.hybrid_command(name='volume', aliases=['vol'])
     async def change_volume(self, ctx, *, vol: int):
         """Changes the player volume to the given value.
@@ -312,7 +379,7 @@ class VideoController(commands.Cog):
                 "Please enter a value between 1 and 100.", delete_after=10)
         elif vc.source:
             vc.source.volume = vol / 100
-        
+
         player = self.get_player(ctx)
         player.volume = vol / 100
         await ctx.send(f"Set the volume to {vol}%.", delete_after=10)
