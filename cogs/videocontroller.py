@@ -64,7 +64,6 @@ Key Features:
 - **`typing`**: For type hinting and function signatures.
 """
 
-
 import aiohttp
 import discord
 import datetime
@@ -75,8 +74,8 @@ import typing
 from discord.ext import commands
 from random import shuffle
 
-import videoplayer
-import video
+from . import videoplayer
+from . import video
 
 
 LYRICS_URL = "https://some-random-api.ml/lyrics?title="

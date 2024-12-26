@@ -60,7 +60,7 @@ Key Features:
 - **`discord`**: For interacting with Discord APIs and sending embeds.
 - **`asyncio`**: For asynchronous event handling and queue management.
 - **`time`**: For tracking playback and elapsed time.
-- **`cogs.video.Video`**: Represents the media source for playback.
+- **`video`**: Represents the media source for playback.
 """
 
 
