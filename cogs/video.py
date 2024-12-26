@@ -85,7 +85,7 @@ from functools import partial
 from pytube import Playlist
 from yt_dlp import YoutubeDL
 
-from . import progress
+import progress
 
 
 YTDL_FORMATS = {
