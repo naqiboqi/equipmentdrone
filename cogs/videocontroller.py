@@ -75,8 +75,8 @@ import typing
 from discord.ext import commands
 from random import shuffle
 
-from . import videoplayer
-from . import video
+import videoplayer
+import video
 
 
 LYRICS_URL = "https://some-random-api.ml/lyrics?title="
