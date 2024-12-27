@@ -9,7 +9,7 @@ class Misc(commands.Cog):
     @commands.command(name="sync")
     @commands.is_owner()
     @commands.guild_only()
-    async def sync_commands(self, ctx):
+    async def sync_commands_(self, ctx):
         """Only needs to be used when new hybrid commands are added."""
         try:
             synced = await self.bot.tree.sync()

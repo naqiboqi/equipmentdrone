@@ -1,10 +1,10 @@
 """
-This module implements a video player cog for a Discord bot, designed to manage video playback
-and user interaction within a server (guild). It utilizes the `discord.py` library to
-interact with Discord APIs, providing functionality for media playback, queue management,
+This module implements a video player cog for a Discord bot, designed to manage video playback 
+and user interaction within a server (guild). It utilizes the `discord.py` library to 
+interact with Discord APIs, providing functionality for media playback, queue management, 
 and detailed playback embeds.
 
-Key Features:
+### Key Features:
 - **Video Playback**:
     - Manage playback of queued video sources.
     - Support for pausing, resuming, looping, and volume control.
@@ -27,6 +27,12 @@ Key Features:
     - Manage playback state and elapsed time tracking efficiently.
 
 ### Classes:
+- **`VoiceConnectionError`**:
+    Custom exception class for handling connection errors.
+
+- **`InvalidVoiceChannel`**:
+    Exception for cases of invalid voice channels.
+
 - **`VideoController`**:
     Manages video playback in a Discord guild. Handles:
     - Playback control (start, pause, resume, loop).
@@ -34,27 +40,47 @@ Key Features:
     - Resource cleanup upon playback end.
 
 ### Methods in `VideoController`:
-- **`__init__(bot)`**:
-    Initializes the controller with the bot instance,
-    creating necessary attributes like queue, volume, and embeds.
 
-- **`play_video(ctx, url_or_name)`**:
-    Starts playback of a video from a given URL or search query.
+- **`connect_`**:
+    Connects the bot to the voice channel of the user who invoked the command.
+    - If the user is not in a voice channel, the command does nothing.
 
-- **`timer(start_time)`**:
-    Tracks elapsed playback time and updates the playback embed.
+- **`play_`**:
+    Adds the video(s) to the end of the queue given a direct link or name to search for. 
+    Handles playlists and private videos.
 
-- **`show_video_details(video)`**:
-    Creates or updates the embed showing current video playback details.
+- **`add_playlist_to_queue`**:
+    Adds all videos in the provided playlist URL to the queue.
 
-- **`add_to_front_queue(video)`**:
-    Adds a new video source to the front of the playback queue.
+- **`add_video_to_queue`**:
+    Adds a single video to the end of the queue.
 
-- **`player_loop()`**:
-    Main loop for managing video playback, processing the queue, and handling playback events.
+- **`now_playing_`**:
+    Displays the current video being played along with its details in an embed format.
 
-- **`destroy(guild)`**:
-    Cleans up resources and disconnects the controller from the guild.
+- **`pause_`**:
+    Pauses or unpauses the currently playing video.
+
+- **`lyrics_`**:
+    Fetches and displays lyrics for the currently playing video or a provided song name.
+
+- **`get_queue_`**:
+    Displays the next up to ten videos in the queue.
+
+- **`remove_`**:
+    Removes a specific video from a given spot in the queue.
+
+- **`shuffle_`**:
+    Shuffles the queue, does not affect the currently playing video.
+
+- **`skip_`**:
+    Skips the currently playing video.
+
+- **`stop_`**:
+    Stops the currently playing video and cleans up the player.
+
+- **`change_volume`**:
+    Adjusts the player volume to the specified level (1-100).
 
 ### Dependencies:
 - **`discord`**: For interacting with Discord APIs and sending embeds.
@@ -63,6 +89,7 @@ Key Features:
 - **`itertools`**: For creating and managing queues.
 - **`typing`**: For type hinting and function signatures.
 """
+
 
 import aiohttp
 import discord
@@ -79,6 +106,7 @@ from . import video
 
 
 LYRICS_URL = "https://some-random-api.ml/lyrics?title="
+
 
 
 class VoiceConnectionError(commands.CommandError):
@@ -219,7 +247,7 @@ class VideoController(commands.Cog):
         await player.queue.put(source)
         await ctx.send(f"Added {source.title} to the queue.", delete_after=10)
 
-    @commands.hybrid_command(name='now')
+    @commands.hybrid_command(name='now', aliases=['np'])
     async def now_playing_(self, ctx):
         """Sends a embed showing the current details of the player."""
         vc = ctx.voice_client
