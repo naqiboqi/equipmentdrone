@@ -6,7 +6,7 @@ class Misc(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         
-    @commands.command(name="sync")
+    @commands.hybrid_command(name="sync")
     @commands.is_owner()
     @commands.guild_only()
     async def sync_commands_(self, ctx):
