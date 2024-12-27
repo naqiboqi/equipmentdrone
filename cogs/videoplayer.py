@@ -46,9 +46,6 @@ Key Features:
 - **`update_player_details(elapsed_time)`**:
     Updates the progress and details of the playback embed.
 
-- **`add_to_front_queue(new_source)`**:
-    Adds a new video source to the front of the playback queue.
-
 - **`player_loop()`**:
     The core loop for managing playback, processing the queue, and handling 
     playback events.
@@ -69,6 +66,8 @@ import discord
 import time
 
 from cogs.video import Video
+
+
 
 class Player:
     """Assigned to each server currently using the bot.
@@ -138,20 +137,6 @@ class Player:
         """Updates the currently existed embed."""
         now_playing_embed = await self.current.display(elapsed_time)
         await self.now_playing_embed.edit(embed=now_playing_embed)
-
-    async def add_to_front_queue(self, new_source: Video):
-        """Adds a source to the front of the queue."""
-        if not isinstance(new_source, Video):
-            raise TypeError("Source must be an instance of Video.")
-
-        queue = asyncio.Queue()
-        await queue.put(new_source)
-
-        while not self.queue.empty():
-            source = await self.queue.get()
-            await queue.put(source)
-
-        self.queue = queue
 
     async def player_loop(self):
         """The main loop for the media player.
