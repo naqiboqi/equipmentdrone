@@ -3,6 +3,7 @@ import random
 import re
 import typing
 
+from asyncio import sleep
 from discord.ext import commands
 
 
@@ -24,6 +25,16 @@ class Ship():
     taken up by the ship's "spots". This array's length is the same as the health array.
     
     This is used to determine which "spot" in the health array needs to be damaged.
+    
+    Attributes:
+    ----------
+        `health` (list[bool]): Stores the health of the ship's components.
+        For example, a `Ship` of size `4` could look like `self.health = [True, True, True, True]`
+        
+        `locs` (list[tuple[int, int]]): Stores the `(y, x)` locations of the ship's components.
+        For example, a `Ship` of size `4` could look like `self.locs = [(1, 0), (2, 0), (3, 0), (4, 0)]`
+        
+        `size` (int): The size and starting health of the ship.
     """
     def __init__(self, size: int):
         self.health = [True] * size
@@ -44,16 +55,31 @@ class Ship():
 
 
 class Player():
-    """Represantation of a player in a running Battleship game.
+    """Represantation of a player in a Battleship game.
     
     Each player has a board of their own ships and an associated fleet array,
     and a board to track the hits or misses on their opponent's ships.
+    
+    Attributes:
+    ----------
+        `board` (Board): Used to store the player's ships
+        `tracking_board` (Board): Used to store the player's hits and misses
+        `fleet` (list[Ship]): The player's ships
+        `member` (discord.Member): The Discord member object associated with the player
+        `fleet_msg` (discord.Message): The Discord message used to send the player's fleet
+        `track_msg` (discord.Message): The Discord message used to send the player's hits and misses
     """
     def __init__(self, member: discord.Member):
         self.board = Board()
         self.tracking_board = Board()
         self.fleet = [Ship(size) for size in [2, 3, 3, 4, 5]]
         self.member = member
+        
+        self.fleet_msg: discord.Message = None
+        self.track_msg: discord.Message = None
+        
+    def __eq__(self, other: "Player"):
+        return self.member == other.member
         
     def get_ship_at(self, y: int, x: int):
         """Returns the player's ship that is at the given `(y, x)` location."""
@@ -74,8 +100,13 @@ class Player():
 class Board():
     """Representation of a player's board in a game. 
     
-    Handles checking locations the board for hits and misses on
-    an enemy's ships and the status of the player's own ships.
+    Handles location validation for player hits and misses on ships.
+    
+    Attributes:
+    ----------
+        `size` (int): The x and y sizes of the board
+        `grid` (list[list[str]]): Keeps track of the player's ships if it is the fleet board,
+        or their hits and misses if it is a tracking board.
     """
     def __init__(self):
         self.size = 10
@@ -130,16 +161,25 @@ class Board():
 class Game:
     """Representation of the Battleship game.
     
-    Stores the players and current turn state of each game,
-    and handles turn progression and validation.
+    Handles turn progression and action validation.
+    
+    Attributes:
+    ----------
+        `player_1` (Player): The first player of the game, who initiated it
+        `player_2` (Player): The second player, can be another Discord user or the bot itself
+        `bot_player` (bool): If player_2 is a bot or not
+        `attacker` (Player): The player who is currently attacking
+        `defender` (Player): The player who is currently defending
     """
     def __init__(self, player_1: Player, player_2: Player, bot_player: bool=False):
         self.player_1 = player_1
         self.player_2 = player_2
         self.bot_player = bot_player
-        self.turn = player_1
-        self.other = player_2
-        self.winner = None
+        self.attacker = player_1
+        self.defender = player_2
+        
+        self.turn_msg: discord.Message = None
+        self.attack_msg: discord.Message = None
 
     async def setup(self, ctx):
         """Sets the initial game state, placing player's ships
@@ -150,31 +190,42 @@ class Game:
 
         player_1.place_ships()
         player_2.place_ships()
-        
+
         await ctx.send(
             f"Game started between {self.player_1.member.mention} and"
             f"{self.player_2.member.mention}!")
 
         try:
-            await self.player_1.member.send(
-                f"Your board:\n```{player_1.board.__str__()}```")
+            player_1.fleet_msg = await self.player_1.member.send(
+                f"Player 1 ships:\n```{player_1.board.__str__()}```")
+            
+            player_1.track_msg = await self.player_1.member.send(
+                f"Player 1 hits/misses:\n```{player_1.tracking_board.__str__()}```")
+            
             if not self.bot_player:
-                await player_2.member.send(
-                    f"Your board:\n```{player_2.board.__str__()}```")
+                player_2.fleet_msg = await player_2.member.send(
+                    f"Player 2 ships:\n```{player_2.board.__str__()}```")
+                
+                player_2.fleet_msg = await self.player_2.member.send(
+                    f"Player 2 hits/misses:\n```{player_2.tracking_board.__str__()}```")
             else:
-                await ctx.send(
-                    f"The bot's board is:\n```{player_2.board.__str__()}```")
+                player_2.fleet_msg = await ctx.send(
+                    f"Player 2 ships:\n```{player_2.board.__str__()}```")
+                
+                player_2.track_msg = await self.player_2.member.send(
+                    f"Player 2 hits/misses:\n```{player_2.tracking_board.__str__()}```")
 
         except discord.errors.Forbidden:
             await ctx.send(f"Could not send the game boards to {player_1.member.mention}"
                 f"or {player_2.member.mention}. Please check your DM settings.")
 
-        await ctx.send(f"{self.player_1.member.mention}, you are going first!")
+        self.turn_msg = await ctx.send(
+            f"{self.player_1.member.mention}, you are going first!")
         
     def next_turn(self):
         """Progresses the game to the next turn."""
-        self.turn = self.player_1 if self.turn == self.player_2 else self.player_2
-        self.other = self.player_2 if self.turn == self.player_1 else self.player_1
+        self.attacker = self.player_1 if self.attacker == self.player_2 else self.player_2
+        self.defender = self.player_2 if self.attacker == self.player_1 else self.player_1
 
     def is_move_valid(self, player: Player, move: str=""):
         """Returns whether or not a player's move is valid.
@@ -222,14 +273,14 @@ class Game:
 
     def commence_attack(self, y: int, x: int):
         """Perform an attack at the targeted position on the board."""
-        attacker = self.turn
-        defender = self.other
+        attacker = self.attacker
+        defender = self.defender
         target = defender.board.grid[y][x]
 
         if target == SHIP:
             ship = defender.get_ship_at(y, x)
             ship.take_damage(y, x)
-            print(f"Attack attempt: {attacker.member.mention} -> {y},{x} , Result: Hit ship at: {ship.locs}")
+            print(f"Attack attempt: {attacker.member.mention} -> {y}, {x}, Result: Hit ship at: {ship.locs}")
 
             attacker.tracking_board.grid[y][x] = HIT
             defender.board.grid[y][x] = HIT
@@ -237,6 +288,16 @@ class Game:
 
         print(f"Attack attempt: {attacker.member.mention} -> {y}, {x}, Result: Miss")
         attacker.tracking_board.grid[y][x] = MISS
+        return False
+    
+    def end_turn(self):
+        """Checks if the game is over and ends it,
+        or continues to the next turn otherwise.
+        """
+        if self.is_over():
+            return True
+
+        self.next_turn()
         return False
 
     def is_over(self):
@@ -247,17 +308,21 @@ class Game:
 class BattleShip(commands.Cog):
     """Commands to represent controls for starting and playing a Battleship game.
     
-    Stores a `dict` of players mapped to the game that they are participating in.
+    Attributes:
+    ----------
+        `bot`: The current bot instance
+        `player_games` (dict[int, Game]): Stores the games associated with each player
     """
     def __init__(self, bot):
         self.bot = bot
-        self.player_games: typing.Dict[Player, Game] = {}
+        print(type(bot))
+        self.player_games: typing.Dict[int, Game] = {}
 
     @commands.hybrid_command(name='battleship')
     async def start_(self, ctx, member: discord.Member=None):
         """Starts a game of battleship between two players, or against you and me!
         
-        Player 1 will always have the first turn.
+        Player 1 will always go first.
         """
         player_1 = Player(ctx.message.author)
 
@@ -294,78 +359,101 @@ class BattleShip(commands.Cog):
         if not game:
             return await ctx.send("You are not in a game!")
 
-        if game.turn.member.id != ctx.author.id:
-            return await ctx.send("It is not your turn!")
+        if game.attacker.member.id != ctx.author.id:
+            return await ctx.send("It is not your turn!", delete_after=10)
 
-        parsed = game.is_move_valid(player=game.turn, move=move)
+        parsed = game.is_move_valid(player=game.attacker, move=move)
         if not parsed:
-            return await ctx.send(f"The move {move} is not valid, try again.")
+            return await ctx.send(f"The move {move} is not valid, try again.", delete_after=10)
         
         attack = game.commence_attack(parsed[0], parsed[1])
         await self.handle_attack_message_(ctx, game, attack)
-        await self.end_current_turn(ctx, game)
-            
-    async def end_current_turn(self, ctx, game: Game):
-        if game.is_over():
+        await self.next_turn(ctx, game)
+                
+    # @commands.hybrid_command(name="end")
+    # async def end_game_(self, ctx, game: Game):
+    #     """Ends the currently running game."""
+    #     player_1 = game.player_1
+    #     player_2 =  game.player_2
+        
+    #     if game.bot_player and game.attacker == game.player_2:
+    #         await ctx.send("I win the game! 🏆")
+    #     else:
+    #         await ctx.send(f"{game.attacker.member.mention}, you win the game! 🏆")
+
+    #     del self.player_games[player_1.member.id]
+    #     del self.player_games[player_2.member.id]
+        
+    # @commands.hybrid_command(name="score")
+    # async def score_(self, ctx):
+    #     """Displays the hit points of your fleet, and total hits and misses."""
+    #     game = self.player_games.get(ctx.author.id)
+    #     if not game:
+    #         return await ctx.send("No game is currently running.")
+        
+    #     player_1 = game.player_1
+    #     player_2 = game.player_2
+        
+    async def next_turn(self, ctx, game: Game):
+        """Runs the next turn of the game."""
+        player_1 = game.player_1
+        player_2 = game.player_2
+        
+        player_1.fleet_msg = await player_1.fleet_msg.edit(
+            content=f"Player 1 ships: \n{player_1.board.__str__()}")
+        
+        player_1.track_msg = await player_1.track_msg.edit(
+            content=f"Player 1 hits/misses: \n{player_1.tracking_board.__str__()}")
+        
+        player_2.fleet_msg = await player_2.track_msg.edit(
+            content=f"Player 2 ships: \n{player_2.board.__str__()}")
+        
+        player_2.track_msg = await player_2.track_msg.edit(
+            content=f"Player 2 hits/misses: \n{player_2.tracking_board.__str__()}")
+        
+        if game.end_turn():
             return await self.end_game_(ctx, game)
         
-        game.next_turn()
         await self.handle_turn_message_(ctx, game)
-        if game.bot_player and game.turn == game.player_2:
+        if game.bot_player and game.attacker == game.player_2:
             await self.handle_bot_turn_(ctx, game)
             
-    async def handle_attack_message_(self, ctx, game, attack):
+    async def handle_attack_message_(self, ctx, game: Game, attack: bool):
         """Sends an appropriate message based on attack outcome."""
         if attack:
             message = (
                 "My ship was hit! How dare you!" 
-                if game.bot_player and game.other == game.player_2 
-                else f"{game.other.member.mention}'s ship was hit!"
-            )
+                if game.bot_player and game.defender == game.player_2 
+                else f"{game.defender.member.mention}'s ship was hit!")
         else:
-            message = f"{game.turn.member.mention}, your attack missed!"
-        await ctx.send(message)
+            message = f"{game.attacker.member.mention}, your attack missed!"
+        
+        game.attack_msg = await ctx.send(message)
     
     async def handle_turn_message_(self, ctx, game: Game):
         """Sends a message indicating whose turn it is."""
-        if game.bot_player and game.turn == game.player_2:
-            await ctx.send("It is now my turn!")
+        if game.bot_player and game.attacker == game.player_2:
+            game.turn_msg = await game.turn_msg.edit(content="It is now my turn!")
         else:
-            await ctx.send(f"{game.turn.member.mention}, it is now your turn!")
+            game.turn_msg = await game.turn_msg.edit(
+                content=f"{game.attacker.member.mention}, it is now your turn!")
         
     async def handle_bot_turn_(self, ctx, game: Game):
         """Performs the bot's turn and send appropriate messages."""
+        game.attack_msg = await game.attack_msg.edit(content="Thinking.... 🤔")
+        await sleep(random.randint(5, 10))
         attack = await game.bot_turn()
+        
         if attack:
-            await ctx.send(f"{game.other.member.mention}'s ship was hit!")
+            game.attack_msg = await game.attack_msg.edit(
+                content=f"{game.defender.member.mention}'s ship was hit!")
         else:
-            await ctx.send("Oh, shoot, I missed!")
+            game.attack_msg = await game.attack_msg.edit(content="Oh, shoot, I missed!")
             
-    @commands.command(name="score")
-    async def score_(self, ctx):
-        """Displays the hit points of your fleet, and total hits and misses."""
-        game = self.player_games.get(ctx.author.id)
-        if not game:
-            return await ctx.send("No game is currently running.")
+        if game.end_turn():
+            return await self.end_game_(ctx, game)
         
-        player_1 = game.player_1
-        player_2 = game.player_2
-        
-        
-
-    @commands.command(name="end")
-    async def end_game_(self, ctx, game: Game):
-        """Ends the currently running game."""
-        player_1 = game.player_1
-        player_2 =  game.player_2
-        
-        if game.bot_player and game.turn == game.player_2:
-            await ctx.send("I win the game!")
-        else:
-            await ctx.send(f"{game.turn.member.mention}, you win the game!")
-
-        del self.player_games[player_1.member.id]
-        del self.player_games[player_2.member.id]
+        await self.handle_turn_message_(ctx, game)
 
 
 async def setup(bot):
