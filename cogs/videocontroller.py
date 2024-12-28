@@ -161,18 +161,14 @@ class VideoController(commands.Cog):
 
     @commands.hybrid_command(name='join', aliases=['connect'])
     async def connect_(self, ctx):
-        """Connects the bot to the voice channel of the user who invoked the command.
-        
-        Does nothing if the user is not in a channel.
-        """
+        """Connects the bot to your current voice channel."""
         if ctx.author.voice:
             channel = ctx.message.author.voice.channel
             await channel.connect()
 
     @commands.hybrid_command(name='play')
     async def play_(self, ctx, *, video_search: str):
-        """Adds the video(s) to the end of the queue,
-        given a direct link or name to search for.
+        """Searches for a video and adds it to the queue. Can also add playlists given a link.
         
         Will also add all videos from a playlist in order,
         if the given link is for a playlist.
@@ -249,7 +245,7 @@ class VideoController(commands.Cog):
 
     @commands.hybrid_command(name='now', aliases=['np'])
     async def now_playing_(self, ctx):
-        """Sends a embed showing the current details of the player."""
+        """Sends a embed showing info for the current vidoe."""
         vc = ctx.voice_client
         player = self.get_player(ctx)
 
@@ -284,8 +280,7 @@ class VideoController(commands.Cog):
 
     @commands.hybrid_command(name='lyrics', aliases=['lyric'])
     async def lyrics_(self, ctx, *, name: typing.Optional[str]):
-        """Gets the lyrics for the currently video, or
-        optionally takes a name for a song to search and get the lyrics for.
+        """Gets the lyrics for the current video or search for a video given a name.
         
         Uses the text obtained through some-random-api's lyric function.
         """
@@ -316,7 +311,7 @@ class VideoController(commands.Cog):
 
     @commands.hybrid_command(name='queue', aliases=['q', 'playlist'])
     async def get_queue_(self, ctx):
-        """Sends the information for up to ten upcoming videos in the players queue."""
+        """Shows the next 10 videos in the queue."""
         vc = ctx.voice_client
         if not vc or not vc.is_connected():
             return await ctx.send(
@@ -342,10 +337,7 @@ class VideoController(commands.Cog):
 
     @commands.hybrid_command(name='removevideo', aliases=['r'])
     async def remove_(self, ctx, *, spot: int):
-        """Removes a video at the given spot in the queue.
-        
-        Throws an error if there is no video at that spot.
-        """
+        """Removes a video at the given spot in the queue."""
         player = self.get_player(ctx)
         videos_queue = player.queue._queue
         try:
@@ -362,7 +354,7 @@ class VideoController(commands.Cog):
 
     @commands.hybrid_command(name='shuffle')
     async def shuffle_(self, ctx):
-        """Shuffles the queue. Has no affect on the currently playing video."""
+        """Shuffles all videos in the queue."""
         player = self.get_player(ctx)
         videos = player.queue._queue
         shuffle(videos)
@@ -383,7 +375,7 @@ class VideoController(commands.Cog):
 
     @commands.hybrid_command(name='stop')
     async def stop_(self, ctx):
-        """Stops the currently playing video and cleans up the player."""
+        """Stops the currently playing video."""
         vc = ctx.voice_client
         if not vc or not vc.is_connected():
             return await ctx.send("I am not currently playing anything!", delete_after=10)
@@ -393,10 +385,7 @@ class VideoController(commands.Cog):
 
     @commands.hybrid_command(name='volume', aliases=['vol'])
     async def change_volume(self, ctx, *, vol: int):
-        """Changes the player volume to the given value.
-        
-        Throws an error if the value is not between 1 and 100.
-        """
+        """Sets the player volume, must be between `1` and `100`."""
         vc = ctx.voice_client
         if not vc or not vc.is_connected():
             return await ctx.send(
