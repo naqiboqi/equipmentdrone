@@ -10,7 +10,10 @@ class Misc(commands.Cog):
     @commands.is_owner()
     @commands.guild_only()
     async def sync_commands_(self, ctx):
-        """Only needs to be used when new hybrid commands are added."""
+        """Sync slash commands with the Discord API.       
+
+        Only needs to be used when new hybrid commands are added.
+        """
         try:
             synced = await self.bot.tree.sync()
             print(f"Loaded {len(synced)} commands!")
