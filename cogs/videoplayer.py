@@ -49,7 +49,7 @@ from cogs.video import Video
 
 
 
-class Player:
+class VideoPlayer:
     """Assigned to each server currently using the bot.
     
     Is created when the bot joins a voice channel, and is destroyed when

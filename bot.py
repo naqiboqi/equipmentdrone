@@ -16,7 +16,7 @@ class MyBot(commands.Bot):
         super().__init__(command_prefix="!", intents=discord.Intents.all())
         self.inital_extensions = [
             "battleship",
-            "misc",
+            "settings",
             "videocontroller",
         ]
         

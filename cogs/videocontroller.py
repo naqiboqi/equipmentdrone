@@ -89,9 +89,9 @@ class VideoController(commands.Cog):
         `players` (dict[str, Player]): The video players associated with each server.
         `player_ctx` (commands.Context): The most recently invoked context.
     """
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.players = {}
+        self.players: dict[str, videoplayer.VideoPlayer] = {}
         self.player_ctx: commands.Context = None
 
     async def cleanup(self, guild: discord.Guild, ctx: commands.Context):
@@ -130,10 +130,10 @@ class VideoController(commands.Cog):
         try:
             player = self.players[ctx.guild.id]
         except AttributeError:
-            player = videoplayer.Player(ctx)
+            player = videoplayer.VideoPlayer(ctx)
             self.players[ctx.guild.id] = player
         except KeyError:
-            player = videoplayer.Player(ctx)
+            player = videoplayer.VideoPlayer(ctx)
             self.players[ctx.guild.id] = player
 
         return player
@@ -194,7 +194,7 @@ class VideoController(commands.Cog):
     async def add_playlist_to_queue_(
         self, 
         ctx: commands.Context, 
-        player: videoplayer.Player, 
+        player: videoplayer.VideoPlayer, 
         playlist_url: str):
         """
         Adds all videos in the playlist at the given url to the queue.
@@ -219,7 +219,7 @@ class VideoController(commands.Cog):
     async def add_video_to_queue_(
         self, 
         ctx: commands.Context, 
-        player: videoplayer.Player, 
+        player: videoplayer.VideoPlayer, 
         video_search: str, 
         seek_time: int):
         """
