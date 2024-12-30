@@ -63,7 +63,7 @@ class Player:
         `cog` (Cog): The cog associated with the current context's command.
         `ctx` (Context): The current context associated with a command.
         `guild` (Guild): The current guild associated with a command.
-        `next` (asyncio.Event): The 
+        `next` (asyncio.Event): The signal to start the next video in the queue.
         `queue` asyncio.Queue): The queue storing upcoming videos.
         `current` (Video): The currently playing video.
         `now_playing_embed` (Embed): The embed storing the player's current information.
