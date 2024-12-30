@@ -32,27 +32,6 @@ Key Features:
     - Queue operations and embed updates.
     - Cleanup and resource management when playback ends.
 
-### Methods in `Player`:
-- **`__init__(ctx)`**:
-    Initializes the player with a context, creating necessary attributes 
-    like queue, volume, and embeds.
-
-- **`timer(start_time)`**:
-    Tracks elapsed playback time and updates the playback embed.
-
-- **`show_player_details()`**:
-    Creates or updates the embed showing current playback details.
-
-- **`update_player_details(elapsed_time)`**:
-    Updates the progress and details of the playback embed.
-
-- **`player_loop()`**:
-    The core loop for managing playback, processing the queue, and handling 
-    playback events.
-
-- **`destroy(guild)`**:
-    Cleans up resources and disconnects the player from the guild.
-
 ### Dependencies:
 - **`discord`**: For interacting with Discord APIs and sending embeds.
 - **`asyncio`**: For asynchronous event handling and queue management.
@@ -65,6 +44,8 @@ import asyncio
 import discord
 import time
 
+import discord.ext.commands
+
 from cogs.video import Video
 
 
@@ -74,8 +55,24 @@ class Player:
     
     Is created when the bot joins a voice channel, and is destroyed when
     the bot leaves the voice channel.
+
+    Attributes:
+    -----------
+        `bot` (discord.ext.commands.Bot): The bot instance.
+        `channel` (MessagableChannel): The channel associated with a command.
+        `cog` (Cog): The cog associated with the current context's command.
+        `ctx` (Context): The current context associated with a command.
+        `guild` (Guild): The current guild associated with a command.
+        `next` (asyncio.Event): The 
+        `queue` asyncio.Queue): The queue storing upcoming videos.
+        `current` (Video): The currently playing video.
+        `now_playing_embed` (Embed): The embed storing the player's current information.
+        `queue_embed` (Embed): The embed storing the upcoming videos' information.
+        `loop` (bool): Whether the player is looping the current video.
+        `paused` (bool): Whether the player is paused.
+        `volume` (float): The current volume of the player as a percentage.
     """
-    def __init__(self, ctx):
+    def __init__(self, ctx: discord.ext.commands.Context):
         self.bot = ctx.bot
         self.channel = ctx.channel
         self.cog = ctx.cog
@@ -98,7 +95,11 @@ class Player:
         """Keeps track of the video's runtime, and calls update_player_details()
         with the current time.
         
-        Additionally keeps track of whether or not the video is paused.
+        Additionally tracks when the video is paused.
+
+        Params:
+        -------
+            `start_time` (float): The start time of the video.
         """
         paused_time = 0.00
         while True:
@@ -134,13 +135,24 @@ class Player:
             self.now_playing_embed = await self.channel.send(embed=now_playing_embed)
 
     async def update_player_details(self, elapsed_time: float):
-        """Updates the currently existed embed."""
+        """Updates the current embed with the new elapsed time.
+
+        Params:
+        -------
+            `elapsed_time` (float): The elapsed time of the video, in seconds.
+        """
         now_playing_embed = await self.current.display(elapsed_time)
         await self.now_playing_embed.edit(embed=now_playing_embed)
 
     async def player_loop(self):
-        """The main loop for the media player.
-        Runs as long as the bot is in a voice channel.
+        """The main loop for the media player. Runs as long as the bot is in a voice channel.
+
+        When a `Video` is waiting in the queue, gets the start time for the `Video` and plays it in the bot's
+        current voice channel. Sends the player details embed to the text channel which the play command from
+        `videocontroller` was sent through.
+
+        Times out after 1200 seconds of inactivity, after which the `Player`
+        will be reset by calling `self.destroy()`.
         """
         await self.bot.wait_until_ready()
 
