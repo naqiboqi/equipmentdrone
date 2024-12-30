@@ -44,8 +44,7 @@ import asyncio
 import discord
 import time
 
-import discord.ext.commands
-
+from discord.ext import commands
 from cogs.video import Video
 
 
@@ -58,10 +57,10 @@ class Player:
 
     Attributes:
     -----------
-        `bot` (discord.ext.commands.Bot): The bot instance.
+        `bot` (commands.Bot): The bot instance.
         `channel` (MessagableChannel): The channel associated with a command.
-        `cog` (Cog): The cog associated with the current context's command.
-        `ctx` (Context): The current context associated with a command.
+        `cog` (commands.Cog): The cog associated with the current context's command.
+        `ctx` (commands.Context): The current context associated with a command.
         `guild` (Guild): The current guild associated with a command.
         `next` (asyncio.Event): The signal to start the next video in the queue.
         `queue` asyncio.Queue): The queue storing upcoming videos.
@@ -72,8 +71,8 @@ class Player:
         `paused` (bool): Whether the player is paused.
         `volume` (float): The current volume of the player as a percentage.
     """
-    def __init__(self, ctx: discord.ext.commands.Context):
-        self.bot = ctx.bot
+    def __init__(self, ctx: commands.Context):
+        self.bot: commands.bot = ctx.bot
         self.channel = ctx.channel
         self.cog = ctx.cog
         self.ctx = ctx
@@ -89,7 +88,6 @@ class Player:
         self.volume = .25
 
         ctx.bot.loop.create_task(self.player_loop())
-
 
     async def timer(self, start_time: float):
         """Keeps track of the video's runtime, and calls update_player_details()
@@ -131,7 +129,6 @@ class Player:
         try:
             self.now_playing_embed = await self.now_playing_embed.edit(embed=now_playing_embed)
         except Exception as e:
-            print(f"Error accessing embed {e}")
             self.now_playing_embed = await self.channel.send(embed=now_playing_embed)
 
     async def update_player_details(self, elapsed_time: float):
@@ -188,7 +185,7 @@ class Player:
             source.cleanup()
             self.current = None
 
-    def destroy(self, guild):
+    def destroy(self, guild: discord.Guild):
         """Disconnects and cleans the player.
         Useful if there is a timeout, or if the bot is no longer playing.
         """
