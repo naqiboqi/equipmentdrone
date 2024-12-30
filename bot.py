@@ -11,7 +11,7 @@ from misc import status
 
 
 class MyBot(commands.Bot):
-    """Initialize the bot and it's starting attributes."""
+    """Represents a Disord bot."""
     def __init__(self):
         super().__init__(command_prefix="!", intents=discord.Intents.all())
         self.inital_extensions = [
@@ -34,7 +34,7 @@ class MyBot(commands.Bot):
         
     @tasks.loop(minutes=10)
     async def background_task(self):
-        """Essentially just a heartbeat print."""
+        """Essentially just a heartbeat check."""
         print("Running background task")
         
     async def on_ready(self):

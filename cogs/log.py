@@ -1,26 +1,62 @@
+"""
+This module implements a log viewer for a Discord bot, designed to display a series of game events 
+as interactive embed pages within a Discord channel. It utilizes the `discord.py` library to 
+interact with Discord APIs, providing functionality for user navigation through the log.
+
+### Key Features:
+- **Embed-Based Navigation**:
+    - Display events in paginated embed pages for better readability.
+    - Navigate between pages using "Previous" and "Next" buttons.
+
+- **Interactive Buttons**:
+    - Intuitive UI with buttons for seamless navigation.
+
+### Classes:
+- **`Event`**:
+    Represents an individual game event with details of participants, event type, and ID.
+- **`Log`**:
+    Maintains a collection of game events and provides methods to add new events and generate embed pages for display.
+
+### Dependencies:
+- **`discord`**: For interacting with Discord APIs and sending embeds.
+"""
+
+
 from discord import Embed
+from typing import Optional
+
+
 
 class Event():
+    """Represents an event with details of its type, participants, and ID.
+    
+    Attributes:
+    -----------
+        `event_id` (int): Unique ID for each `event`.
+        `participants` (list[Player]): Users involved in the `event`.
+        `event_type` (str): Type of `event`, used for the string representation.
+        `event` (list[tuple[int, int]]|None): Details of the `event` (coordinates).
+    """
     event_counter = 1
 
     def __init__(
         self, 
         participants: list,
         event_type: str,
-        event: list[tuple[int, int]]|None):
+        event: Optional[list[tuple[int, int]]]):
 
         self.event_id = Event.event_counter
         self.participants = participants
         self.event_type = event_type
         self.event = event
-        
         self.Event.event_counter += 1
 
     def __repr__(self):
+        """Returns a formatted string representation of the event."""
         attacker = self.participants[0]
         defender = self.participants[1]
 
-        event_types = {
+        event_descriptions = {
             "attack_hit" : f"`{attacker.member.name}` hit"
                 f" `{defender.member.name}'s` ship by attacking `{self.event}`.",
 
@@ -42,33 +78,45 @@ class Event():
             "next_turn" : f"It is `{attacker.member.name}'s` turn.",
         }
 
-        return f"{self.event_id}) {event_types[self.event_type]}"
+        return f"{self.event_id}) {event_descriptions.get(self.event_type, "Unknown event")}"
 
 
 class Log():
+    """Represents a log of `events` that can be displayed.
+    
+    Attributes:
+    -----------
+        `events` (list[Event]): Stored events.
+    """
     def __init__(self):
         self.events: list[Event] = []
-        self.embed: Embed = None
 
     def add_event(
         self, 
         participants: list,
         event_type: str, 
-        event: list[tuple[int, int]]|None):
+        event: Optional[list[tuple[int, int]]]):
         """
-        Adds a new event to the game log.
+        Adds a new `event` to the game log with the given details.
+        
+        Params:
+        -------
+            `event_id` (int): Unique ID for each `event`.
+            `participants` (list[Player]): Users involved in the `event`.
+            `event_type` (str): Type of `event`, used for the string representation.
+            `event` (list[tuple[int, int]]|None): Details of the `event`.
         """
         event = Event(participants, event_type, event)
         self.events.append(event)
         print(event)
 
-    async def get_embed_pages(self):
-        event_slices = [self.events[i:i + 10]
-            for i in range(0, len(self.events), 10)]
+    async def get_embed_pages(self, max_events_per_page=20):
+        """Generates embed pages for the game log."""
+        event_slices = [self.events[i:i + max_events_per_page]
+            for i in range(0, len(self.events), max_events_per_page)]
 
         pages: list[Embed] = []
         for event_slice in event_slices:
-
             events = "\n".join(str(event) for event in event_slice)
             page = Embed(
                 title="Game Log", 

@@ -60,10 +60,10 @@ import discord
 import datetime
 import itertools
 import pytube
-import typing
 
 from discord.ext import commands
 from random import shuffle
+from typing import Optional
 
 from . import videoplayer
 from . import video
@@ -179,7 +179,7 @@ class VideoController(commands.Cog):
         await ctx.defer()
 
         is_playlist = "playlist?list=" in video_search
-        seek_time = int(video_search.split("&t=")[-1]) if "&t=" in video_search else 0
+        seek_time = int(video_search.split("&t=")[-1]) if "&t=" in video_search else 0.00
 
         try:
             if is_playlist:
@@ -289,7 +289,7 @@ class VideoController(commands.Cog):
         self, 
         ctx: commands.Context, 
         *, 
-        video_search: typing.Optional[str]):
+        video_search: Optional[str]):
         """
         Gets the lyrics for the current video or search for a video given a name.
         

@@ -50,10 +50,11 @@ from cogs.video import Video
 
 
 class VideoPlayer:
-    """Assigned to each server currently using the bot.
+    """Represents a video player that awaits recieving `Video` objects
+    from a queue and playing them as needed.
     
-    Is created when the bot joins a voice channel, and is destroyed when
-    the bot leaves the voice channel.
+    Is created when the `bot` joins a voice channel, and is destroyed when
+    the `bot` leaves the voice channel. Each `Guild` will have its own `Player`.
 
     Attributes:
     -----------

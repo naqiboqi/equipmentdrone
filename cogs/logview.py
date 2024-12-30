@@ -10,11 +10,6 @@ interact with Discord APIs, providing functionality for user navigation through 
 
 - **Interactive Buttons**:
     - Intuitive UI with buttons for seamless navigation.
-    - Prevent navigation beyond the first or last page.
-
-- **Asynchronous Operations**:
-    - Utilize `asyncio` for non-blocking interaction handling.
-    - Efficiently update messages with the selected page.
 
 ### Classes:
 - **`LogView`**:

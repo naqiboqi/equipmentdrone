@@ -3,7 +3,7 @@ from discord.ext import commands
 
 
 class Settings(commands.Cog):
-    """Commands """
+    """Commands to represent bot maintenance."""
     def __init__(self, bot):
         self.bot = bot
         
