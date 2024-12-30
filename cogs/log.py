@@ -49,7 +49,7 @@ class Event():
         self.participants = participants
         self.event_type = event_type
         self.event = event
-        self.Event.event_counter += 1
+        Event.event_counter += 1
 
     def __repr__(self):
         """Returns a formatted string representation of the event."""
