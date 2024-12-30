@@ -8,32 +8,32 @@ class ProgressBar():
     
     Attributes:
     -----------
-    `vid_length` (int): The length of the video, in seconds.
+    `vid_length` (float): The length of the video, in seconds.
     `size` (int): The character length of the progress bar.
     `line` (str): The character used to represent the line.
     `slider` (str): The character used to represent the current time in the progress bar.
     """
-    def __init__(self, vid_length: int):
+    def __init__(self, vid_length: float):
         self.vid_length = vid_length
         self.size = 20
         self.line = "▬"
         self.slider = "🔘"
 
-    def is_complete(self, elapsed_time: int):
+    def is_complete(self, elapsed_time: float):
         """Returns if whether video is completed or not.
         
         Params:
         ------
-            elapsed_time (int): The elapsed time of the video, in seconds.
+            `elapsed_time` (float): The elapsed time of the video, in seconds.
         """
         return elapsed_time >= self.vid_length
 
-    def display(self, elapsed_time: int):
-        """Returns a string representation of progress bar.
+    def display(self, elapsed_time: float):
+        """Returns a string representation of progress bar with the current progress of the video.
         
         Params:
         ------
-            elapsed_time (int): The elapsed time of the video, in seconds.
+            `elapsed_time` (float): The elapsed time of the video, in seconds.
         """
         if self.is_complete(elapsed_time):
             string_bar = self.line * (self.size - 1) + self.slider
