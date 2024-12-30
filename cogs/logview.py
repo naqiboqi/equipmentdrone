@@ -57,7 +57,7 @@ class LogView(discord.ui.View):
             self.page_num -= 1
             await interaction.response.edit_message(embed=self.pages[self.page_num])
         else:
-            interaction.response.defer()
+            await interaction.response.defer()
 
     @discord.ui.button(label="Next", style=discord.ButtonStyle.blurple)
     async def next_button(
@@ -76,4 +76,4 @@ class LogView(discord.ui.View):
             self.page_num += 1
             await interaction.response.edit_message(embed=self.pages[self.page_num])
         else:
-            interaction.response.defer()
+            await interaction.response.defer()
