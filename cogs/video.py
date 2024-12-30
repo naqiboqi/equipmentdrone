@@ -14,7 +14,7 @@ Key Features:
     - Generate real-time embed messages showing playback progress, video details, and requester information.
 
 - **Progress Tracking**:
-    - Visualize video progress using a customizable progress bar.
+    - Visualize video progress using a progress bar.
     - Manage playback states, including elapsed time and seeked positions.
 
 - **Asynchronous Operations**:
@@ -28,51 +28,18 @@ Key Features:
     - Prepare and manage audio streams.
     - Generate playback progress and now-playing embeds.
 
-- **`ProgressBar`** (imported from `progress`):
-    - Provides a visual representation of the playback progress bar.
-    - Updates dynamically based on elapsed time and video duration.
-
-### Functions:
-- **`get_ffmpeg_options(seek_time=0)`**:
-    Returns FFmpeg options for streaming, with support for seeking to a specific time.
-
-### Class Methods in `Video`:
-- **`get_source(ctx, search, *, loop, download=False, seek_time=0)`**:
-    Retrieves a `Video` object for a given video link or search query.
-
-- **`get_sources(ctx, playlist, *, loop, download=False)`**:
-    Processes a playlist and retrieves `Video` objects for all videos.
-
-- **`prepare_stream(data, *, loop)`**:
-    Prepares a video stream for playback and returns a `Video` instance.
-
-### Instance Methods in `Video`:
-- **`__getitem__(item)`**:
-    Provides dictionary-like access to `Video` attributes.
-
-- **`get_duration_datetime()`**:
-    Converts the video duration into a total seconds value.
-
-- **`start(start_time, volume)`**:
-    Sets up initial playback settings, including volume and start time.
-
-- **`display(elapsed_time=0.00)`**:
-    Generates a `discord.Embed` containing playback details and a progress bar.
-
 ### Constants:
 - **`YTDL_FORMATS`**:
     Configuration dictionary for `yt-dlp`, specifying formats and options for video extraction.
 
-Usage Example:
-    from your_module_name import Video
-
-    video = await Video.get_source(ctx, "https://youtube.com/example", loop=asyncio.get_event_loop())
-    
-    await video.start(start_time=0, volume=0.5)
-    
-    embed = await video.display(elapsed_time=30.0)
-    
-    await ctx.send(embed=embed)
+### Dependencies:
+- **`asyncio`**: For asynchronous event handling and queue management.
+- **`datetime`**: For tracking time and formatting strings.
+- **`discord`**: For interacting with Discord APIs and sending embeds.
+- **`time`**: For string formatting with time fields.
+- **`pytube`**: For downloading and processing YouTube videos.
+- **`yt_dlp`**: For playlist management.
+- **`progress`**: For visual representing the progress a video
 """
 
 
@@ -105,8 +72,13 @@ YTDL_FORMATS = {
 ytdl = YoutubeDL(YTDL_FORMATS)
 
 
-async def get_ffmpeg_options(seek_time=0):
-    """Returns the applicable ffmpeg options for the requested seek time."""
+async def get_ffmpeg_options(seek_time=0.00):
+    """Returns the applicable ffmpeg options for the requested video.
+    
+    Params:
+    -------
+    `seek_time` (float): Time to seek to in the video, in seconds.
+    """
     return {
         'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
         'options': f'-vn -ss {seek_time}'
@@ -114,7 +86,23 @@ async def get_ffmpeg_options(seek_time=0):
 
 
 class Video(discord.PCMVolumeTransformer):
-    """Represents a Youtube video, with applicable attributes to store the video details."""
+    """Represents a Youtube video, with applicable attributes to store the video metadata.
+    
+    Inherits from `PCMVolumeTransformer` to allow volume control of the source.
+
+    Attributes:
+    -----------
+        `source` (FFmpegPCMAudio): The audio source obtained through ffmpeg.
+        `data` (dict[str, str|int]): The metadata for the audio source.
+        `title` (str): The title of the source video.
+        `web_url` (str): The web url that the source video originated from.
+        `video_id` (str): The video-id of the source video.
+        `thumbnail` (str): The thumbnail url of the source video.
+        `elapsed_time` (float): The elapsed time of the video, in seconds.
+        `progress` (ProgressBar): Represents a video's progress bar with a slider denoting the elapsed time.
+        `seeked_time` (float): The start/seek time of the video in seconds, defaults to 0.00.
+        `start_time` (flaot): The start time of the video.
+    """
     def __init__(
         self,
         source: discord.player.FFmpegPCMAudio,
@@ -150,7 +138,17 @@ class Video(discord.PCMVolumeTransformer):
         loop: asyncio.AbstractEventLoop,
         download=False):
         """
-        Gets the source objects for each video link in the playlist.
+        Gets the source object for each video in the playlist through its url.
+        
+        Params:
+            `ctx` (Context): The current context associated with a command.
+            `playlist` (pytube.Playlist): Contains the videos to obtain the sources from.
+            `loop` (AbstractEventLoop): The event loop to use for asynchronous operations. 
+                If not provided, the default event loop for the current thread will be used.
+                
+            `download` (bool): Whether to download the video or not.
+
+        Note that any privated videos will be skipped.
         """
         tasks = [cls.get_source(ctx=ctx, search=url, loop=loop, download=download)
             for url in playlist.video_urls]
@@ -165,9 +163,19 @@ class Video(discord.PCMVolumeTransformer):
         *, 
         loop: asyncio.AbstractEventLoop, 
         download=False, 
-        seek_time=0):
+        seek_time=0.00):
         """
-        Gets the source object for the link of the requested video.
+        Gets the source for the video obtained from searching for the `string`, returning the first
+        result from Youtube.
+        
+        Params:
+            `ctx` (Context): The current context associated with a command.
+            `playlist` (pytube.Playlist): Contains the videos to obtain the sources from.
+            `loop` (AbstractEventLoop): The event loop to use for asynchronous operations.
+                If not provided, the default event loop for the current thread will be used.
+
+            `download` (bool): Whether to download the video or not.
+            `seek_time` (float): The seek time of the video in seconds.
         """
         loop = loop or asyncio.get_event_loop()
 
@@ -197,7 +205,13 @@ class Video(discord.PCMVolumeTransformer):
         *, 
         loop: asyncio.AbstractEventLoop):
         """
-        Prepares a video stream for playing, and returns an instance of the video source object.
+        Prepares a video stream for playing, and returns an instance of that video object.
+
+        Params:
+        -------
+            `data` (Video): The video data object to prepare for streaming.
+            `loop` (AbstractEventLoop): The event loop to use for asynchronous operations.
+                If not provided, the default event loop for the current thread will be used.
         """
         loop = loop or asyncio.get_event_loop()
         requester = data['requester']
@@ -214,15 +228,24 @@ class Video(discord.PCMVolumeTransformer):
         """Returns the video duration as an amount in seconds."""
         return datetime.timedelta(seconds=self.duration).total_seconds()
 
-    async def start(self, start_time: float, volume: int):
-        """Sets the intital settings for the video source object."""
+    async def start(self, start_time: float, volume: float):
+        """Initializes the settings for the video source object.
+        
+        Params:
+        -------
+            `start_time` (float): The start time of the video.
+            `volume` (float): The current volume of the player as a percentage.
+        """
         self.progress = progress.ProgressBar(self.duration)
         self.start_time = start_time
         self.volume = volume
 
     async def display(self, elapsed_time=0.00):
-        """Returns an embed containing the details of video source object,
-        to be used for the now-playing embed.
+        """Returns an embed containing the details of video source object.
+
+        Params:
+        -------
+            `elapsed_time` (float): The elapsed time of the video, in seconds.
         """
         self.elapsed_time = elapsed_time
         elapsed_field = time.strftime('%H:%M:%S', time.gmtime(elapsed_time))
