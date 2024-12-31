@@ -56,6 +56,8 @@ The bot supports stardard prefix commands and ~~slash~~ hybrid commands.
 
 Personally I prefer hybrid commands, as Discord will show a help string for the command after you type the `/`:
 
+![alt text](/images/all_slash.png)
+
 Alternatively you can invoke commands via the prefix `!`
 
 
