@@ -50,12 +50,13 @@ After completing all of the above steps, the bot's directory should look like th
 
 **Commands**
 
-The bot supports stardard prefix commands and ~~slash~~ hybrid commands. 
+The bot supports stardard prefix commands and ~~slash~~ hybrid commands.
+
+
 
 Personally I prefer hybrid commands, as Discord will show a help string for the command after you type the `/`:
 
 Alternatively you can invoke commands via the prefix `!`
-    # Placeholder
 
 
 #### Useful things
@@ -68,5 +69,5 @@ Contains everything you need to know about the `discord.py` library
 #### To-Do
 -------------
 - [ ] Add seeking to media controls
-- [ ] Complete battleship implementation
+- [X] Complete battleship implementation
 - [ ] Host the bot with Docker
