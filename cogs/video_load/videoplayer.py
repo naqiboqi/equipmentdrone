@@ -33,8 +33,8 @@ Key Features:
     - Cleanup and resource management when playback ends.
 
 ### Dependencies:
-- **`discord`**: For interacting with Discord APIs and sending embeds.
 - **`asyncio`**: For asynchronous event handling and queue management.
+- **`discord`**: For interacting with Discord APIs and sending embeds.
 - **`time`**: For tracking playback and elapsed time.
 - **`video`**: Represents the media source for playback.
 """
@@ -45,7 +45,7 @@ import discord
 import time
 
 from discord.ext import commands
-from cogs.video import Video
+from .video import Video
 
 
 

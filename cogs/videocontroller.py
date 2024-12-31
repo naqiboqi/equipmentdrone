@@ -27,12 +27,6 @@ and detailed playback embeds.
     - Manage playback state and elapsed time tracking efficiently.
 
 ### Classes:
-- **`VoiceConnectionError`**:
-    Custom exception class for handling connection errors.
-
-- **`InvalidVoiceChannel`**:
-    Custom exception class for handling invalid voice channel errors.
-
 - **`VideoController`**:
     Manages video playback in a Discord guild. Handles:
     - Playback control (start, pause, resume, loop).
@@ -45,13 +39,14 @@ and detailed playback embeds.
 ### Dependencies:
 - **`asyncio`**: For asynchronous event handling and queue management.
 - **`discord`**: For interacting with Discord APIs and sending embeds.
+
 - **`itertools`**: For creating and managing queues.
 - **`pytube`**: For downloading and processing YouTube videos.
 - **`typing`**: For type hinting and function signatures.
 - **`discord.ext`**: For Discord bot command usage.
-- **`random.shuffle`**: For shuffling the queue.
-- **`videoplayer`**: For playing queued videos.
+- **`random`**: For shuffling the queue.
 - **`video`**: For representing video sources.
+- **`videoplayer`**: For playing queued videos.
 """
 
 
@@ -65,20 +60,9 @@ from discord.ext import commands
 from random import shuffle
 from typing import Optional
 
-from . import videoplayer
-from . import video
+from .video_load import Video, VideoPlayer
+from .video_load import LYRICS_URL
 
-
-LYRICS_URL = "https://some-random-api.ml/lyrics?title="
-
-
-
-class VoiceConnectionError(commands.CommandError):
-    """Custom Exception class for connection errors."""
-
-
-class InvalidVoiceChannel(VoiceConnectionError):
-    """Exception for cases of invalid voice channels."""
 
 
 class VideoController(commands.Cog):
@@ -91,7 +75,7 @@ class VideoController(commands.Cog):
     """
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.players: dict[str, videoplayer.VideoPlayer] = {}
+        self.players: dict[str, VideoPlayer] = {}
         self.player_ctx: commands.Context = None
 
     async def cleanup(self, guild: discord.Guild, ctx: commands.Context):
@@ -130,10 +114,10 @@ class VideoController(commands.Cog):
         try:
             player = self.players[ctx.guild.id]
         except AttributeError:
-            player = videoplayer.VideoPlayer(ctx)
+            player = VideoPlayer(ctx)
             self.players[ctx.guild.id] = player
         except KeyError:
-            player = videoplayer.VideoPlayer(ctx)
+            player = VideoPlayer(ctx)
             self.players[ctx.guild.id] = player
 
         return player
@@ -194,7 +178,7 @@ class VideoController(commands.Cog):
     async def add_playlist_to_queue_(
         self, 
         ctx: commands.Context, 
-        player: videoplayer.VideoPlayer, 
+        player: VideoPlayer, 
         playlist_url: str):
         """
         Adds all videos in the playlist at the given url to the queue.
@@ -206,7 +190,7 @@ class VideoController(commands.Cog):
             `playlist_url` (str): The url for the `Playlist` to pull sources from.
         """
         playlist = pytube.Playlist(playlist_url)
-        sources = await video.Video.get_sources(
+        sources = await Video.get_sources(
             ctx=ctx, playlist=playlist, loop=self.bot.loop, download=False)
 
         for source in sources:
@@ -219,7 +203,7 @@ class VideoController(commands.Cog):
     async def add_video_to_queue_(
         self, 
         ctx: commands.Context, 
-        player: videoplayer.VideoPlayer, 
+        player: VideoPlayer, 
         video_search: str, 
         seek_time: int):
         """
@@ -231,7 +215,7 @@ class VideoController(commands.Cog):
             `video_search`: The title to search for.
             `seek_time`: The time to start the video at.
         """
-        source = await video.Video.get_source(
+        source = await Video.get_source(
             ctx=ctx, search=video_search, 
             loop=self.bot.loop, 
             download=False, 

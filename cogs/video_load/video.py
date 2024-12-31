@@ -37,6 +37,8 @@ Key Features:
 - **`datetime`**: For tracking time and formatting strings.
 - **`discord`**: For interacting with Discord APIs and sending embeds.
 - **`time`**: For string formatting with time fields.
+- **`functools`**: Provides utility functions, such as `partial`,
+    used to create reusable function arguments for asynchronous tasks.
 - **`pytube`**: For downloading and processing YouTube videos.
 - **`yt_dlp`**: For playlist management.
 - **`progress`**: For visual representing the progress a video
@@ -52,7 +54,8 @@ from functools import partial
 from pytube import Playlist
 from yt_dlp import YoutubeDL
 
-from . import progress
+from .progress import ProgressBar
+
 
 
 YTDL_FORMATS = {
@@ -69,7 +72,9 @@ YTDL_FORMATS = {
     'source_address' : '0.0.0.0'
 }
 
+
 ytdl = YoutubeDL(YTDL_FORMATS)
+
 
 
 async def get_ffmpeg_options(seek_time=0.00):
@@ -101,7 +106,7 @@ class Video(discord.PCMVolumeTransformer):
         `elapsed_time` (float): The elapsed time of the video, in seconds.
         `progress` (ProgressBar): Represents a video's progress bar with a slider denoting the elapsed time.
         `seeked_time` (float): The start/seek time of the video in seconds, defaults to 0.00.
-        `start_time` (flaot): The start time of the video.
+        `start_time` (float): The start time of the video.
     """
     def __init__(
         self,
@@ -120,7 +125,7 @@ class Video(discord.PCMVolumeTransformer):
         self.thumbnail = F"https://i1.ytimg.com/vi/{self.video_id}/hqdefault.jpg"
 
         self.elapsed_time = 0.00
-        self.progress = None
+        self.progress: ProgressBar = None
         self.seeked_time = 0.00
         self.start_time = 0.00
 
@@ -236,7 +241,7 @@ class Video(discord.PCMVolumeTransformer):
             `start_time` (float): The start time of the video.
             `volume` (float): The current volume of the player as a percentage.
         """
-        self.progress = progress.ProgressBar(self.duration)
+        self.progress = ProgressBar(self.duration)
         self.start_time = start_time
         self.volume = volume
 
