@@ -81,8 +81,10 @@ class Event():
         return f"{self.event_id}) {event_descriptions.get(self.event_type, "Unknown event")}"
 
 
-class Log():
+class EventLog():
     """Represents a log of `events` that can be displayed.
+    
+    Can create new `events` with specified details in `add_event()`.
     
     Attributes:
     -----------

@@ -3,4 +3,6 @@
 /__pycache__
 /ffmpeg.exe
 /cogs/__pycache__
+/cogs/battleship_game/__pycache__
+/cogs/event_log/__pycache__
 /misc/__pycache__
