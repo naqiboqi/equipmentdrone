@@ -17,6 +17,7 @@ class MyBot(commands.Bot):
         self.inital_extensions = [
             "battleship",
             "settings",
+            "dnd",
             "videocontroller",
         ]
         
