@@ -41,7 +41,7 @@ class LogView(discord.ui.View):
         self.page_num = 0
         
     @discord.ui.button(label="Previous", style=discord.ButtonStyle.blurple)
-    async def previous_button(
+    async def previous_button_(
         self,
         interaction: discord.Interaction,
         button: discord.ui.Button):
@@ -60,7 +60,7 @@ class LogView(discord.ui.View):
             await interaction.response.defer()
 
     @discord.ui.button(label="Next", style=discord.ButtonStyle.blurple)
-    async def next_button(
+    async def next_button_(
         self,
         interaction: discord.Interaction,
         button: discord.ui.Button):
