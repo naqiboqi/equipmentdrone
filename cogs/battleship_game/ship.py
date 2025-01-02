@@ -24,6 +24,7 @@ class Ship():
         self.health = [True] * size
         self.locs: list[tuple[int, int]] = []
         self.size = size
+        self.placed = False
 
     def take_damage_at(self, y: int, x: int):
         """Damages the targeted section of the ship.

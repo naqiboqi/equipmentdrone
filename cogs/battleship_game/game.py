@@ -61,36 +61,40 @@ class Game:
         player_1 = self.player_1
         player_2 = self.player_2
 
-        player_1.place_ships()
-        player_2.place_ships()
+        await player_1.choose_ship_placement(ctx)
+        
+        if not self.bot_player:
+            await player_2.choose_ship_placement(ctx)
+        else:
+            await player_2.random_place_ships()
 
         await ctx.send(
             f"Game started between {self.player_1.member.mention} and "
             f"{self.player_2.member.mention}!")
 
-        try:
-            player_1.fleet_msg = await self.player_1.member.send(
-                f"Player 1 ships:\n```{player_1.board.__str__()}```\n")
+        # try:
+        #     player_1.fleet_msg = await self.player_1.member.send(
+        #         f"Player 1 ships:\n```{player_1.board.__str__()}```\n")
 
-            player_1.track_msg = await self.player_1.member.send(
-                f"Player 1 hits/misses:\n```{player_1.tracking_board.__str__()}```\n")
+        #     player_1.track_msg = await self.player_1.member.send(
+        #         f"Player 1 hits/misses:\n```{player_1.tracking_board.__str__()}```\n")
 
-            if not self.bot_player:
-                player_2.fleet_msg = await player_2.member.send(
-                    f"Player 2 ships:\n```{player_2.board.__str__()}```\n")
+        #     if not self.bot_player:
+        #         player_2.fleet_msg = await player_2.member.send(
+        #             f"Player 2 ships:\n```{player_2.board.__str__()}```\n")
 
-                player_2.fleet_msg = await self.player_2.member.send(
-                    f"Player 2 hits/misses:\n```{player_2.tracking_board.__str__()}```\n")
-            else:
-                player_2.fleet_msg = await ctx.send(
-                    f"Player 2 ships:\n```{player_2.board.__str__()}```\n")
+        #         player_2.fleet_msg = await self.player_2.member.send(
+        #             f"Player 2 hits/misses:\n```{player_2.tracking_board.__str__()}```\n")
+        #     else:
+        #         player_2.fleet_msg = await ctx.send(
+        #             f"Player 2 ships:\n```{player_2.board.__str__()}```\n")
 
-                player_2.track_msg = await ctx.send(
-                    f"Player 2 hits/misses:\n```{player_2.tracking_board.__str__()}```\n")
+        #         player_2.track_msg = await ctx.send(
+        #             f"Player 2 hits/misses:\n```{player_2.tracking_board.__str__()}```\n")
 
-        except discord.errors.Forbidden:
-            await ctx.send(f"Could not send the game boards to {player_1.member.mention}"
-                f"or {player_2.member.mention}. Please check your DM settings.")
+        # except discord.errors.Forbidden:
+        #     await ctx.send(f"Could not send the game boards to {player_1.member.mention}"
+        #         f"or {player_2.member.mention}. Please check your DM settings.")
 
         await sleep(1)
         self.add_event_to_log([self.player_1, self.player_2], "start_game")

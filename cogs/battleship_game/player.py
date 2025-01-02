@@ -7,9 +7,10 @@ a fleet of `ships`, and the associated Discord member.
 
 import discord
 
+from asyncio import sleep
 from .board import Board
 from .ship import Ship
-
+from .boardview import BoardView
 
 
 class Player():
@@ -45,10 +46,30 @@ class Player():
         for ship in self.fleet:
             if loc in ship.locs:
                 return ship
-
-    def place_ships(self):
+    
+    async def choose_ship_placement(self, ctx):
+        current_ship = self.fleet[0]
+        self.board.place_ship_(
+            current_ship, 
+            self.board.size // 2,
+            self.board.size // 2,
+            direction="H")
+        
+        embed = await self.board.create_embed(current_ship)
+        view = BoardView(self.board, current_ship)
+        
+        try:
+            await self.member.send(embed=embed, view=view)
+        except discord.errors.Forbidden:
+            await ctx.send(f"Could not send the game board to {self.member.mention}, "
+                f"please check you DM settings.")
+            
+        while not (all(ship.placed for ship in self.fleet)):
+            await sleep(5)
+            
+    async def random_place_ships(self):
         """Randomly place ships on the player's board."""
-        self.board.random_place_ships(self.fleet)
+        await self.board.random_place_ships(self.fleet)
 
     def is_defeated(self):
         """Returns whether all of the player's ships are sunk."""
