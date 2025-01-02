@@ -18,14 +18,24 @@ class Dice():
 
     def create_roll_embed(self, num_rolls: int, rolls: list[int]=[], roll_type: str="normal"):
         embed = discord.Embed(
-            title="Time to roll!",
+            title="Let's go gampling!",
             description=f"**Rolling** `{num_rolls}d{self.num_sides}`",
             color=discord.Color.fuchsia(),
         )
+        
+        embed.add_field(
+            name="Rolling for ",
+            value=f"`{roll_type.capitalize()}`",
+            inline=True
+        )
+        embed.add_field(
+            name="All Rolls:",
+            value=", ".join(rolls)
+        )
 
-        if roll_type == "adv":
+        if roll_type == "advantage":
             value = str(max(rolls))
-        elif roll_type == "disadv":
+        elif roll_type == "disadvantage":
             value = str(min(rolls))
         elif roll_type == "normal" and rolls:
             value = rolls[0]
@@ -33,11 +43,7 @@ class Dice():
             value = "Waiting for roll..."
 
         embed.add_field(
-            name="Roll Type",
-            value=f"`{roll_type.capitalize()}`"
-        )
-        embed.add_field(
-            name="**Dice Roll Result**",
+            name="**You rolled: **",
             value=f"`{value}`",
             inline=False
         )

@@ -44,7 +44,7 @@ class DiceView(discord.ui.View):
         """
 
         rolls = self.dice.roll(self.num_rolls)
-        embed = self.dice.create_roll_embed(self.num_rolls, rolls, "adv")
+        embed = self.dice.create_roll_embed(self.num_rolls, rolls, "advantage")
 
         await interaction.response.edit_message(embed=embed)
         
@@ -63,6 +63,6 @@ class DiceView(discord.ui.View):
         """
 
         rolls = self.dice.roll(self.num_rolls)
-        embed = self.dice.create_roll_embed(self.num_rolls, rolls, "disadv")
+        embed = self.dice.create_roll_embed(self.num_rolls, rolls, "disadvantage")
 
         await interaction.response.edit_message(embed=embed)
