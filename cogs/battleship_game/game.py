@@ -3,8 +3,9 @@ import random
 import re
 
 from asyncio import sleep
+from discord.ext import commands
+from typing import Optional
 from ..event_log import EventLog
-
 from .player import Player
 
 
@@ -48,20 +49,32 @@ class Game:
         self, 
         participants: list[Player], 
         event_type: str, 
-        event: list[tuple[int, int]]|None=None):
+        event: Optional[list[tuple[int, int]]]):
         """
         Adds a new event to the game log.
+
+        Params:
+        -------
+            `participants` (list[Player]): The players involved in the event
+            `event_type` (str): A tag to represent the type of the event
+            `event` (list[tuple[int, int]]|None): Coordinates of the event, if any
         """
         self.log_.add_event(participants, event_type, event)
 
-    async def setup(self, ctx):
+    async def setup(self, ctx: commands.Context):
         """Sets the initial game state, placing player's ships
         and sends the initial boards to the players.
+
+        Params:
+        -------
+            `ctx` (commands.Context): The current `context` associated with a command
         """
         player_1 = self.player_1
         player_2 = self.player_2
 
+        await ctx.send("Please check your DMs in order to place your ships.")
         await player_1.choose_ship_placement(ctx)
+        self.add_event_to_log([self.player_1], "ship_placement")
         
         if not self.bot_player:
             await player_2.choose_ship_placement(ctx)
@@ -71,30 +84,6 @@ class Game:
         await ctx.send(
             f"Game started between {self.player_1.member.mention} and "
             f"{self.player_2.member.mention}!")
-
-        # try:
-        #     player_1.fleet_msg = await self.player_1.member.send(
-        #         f"Player 1 ships:\n```{player_1.board.__str__()}```\n")
-
-        #     player_1.track_msg = await self.player_1.member.send(
-        #         f"Player 1 hits/misses:\n```{player_1.tracking_board.__str__()}```\n")
-
-        #     if not self.bot_player:
-        #         player_2.fleet_msg = await player_2.member.send(
-        #             f"Player 2 ships:\n```{player_2.board.__str__()}```\n")
-
-        #         player_2.fleet_msg = await self.player_2.member.send(
-        #             f"Player 2 hits/misses:\n```{player_2.tracking_board.__str__()}```\n")
-        #     else:
-        #         player_2.fleet_msg = await ctx.send(
-        #             f"Player 2 ships:\n```{player_2.board.__str__()}```\n")
-
-        #         player_2.track_msg = await ctx.send(
-        #             f"Player 2 hits/misses:\n```{player_2.tracking_board.__str__()}```\n")
-
-        # except discord.errors.Forbidden:
-        #     await ctx.send(f"Could not send the game boards to {player_1.member.mention}"
-        #         f"or {player_2.member.mention}. Please check your DM settings.")
 
         await sleep(1)
         self.add_event_to_log([self.player_1, self.player_2], "start_game")
@@ -107,15 +96,21 @@ class Game:
     def is_move_valid(self, player: Player, move: str=""):
         """Returns whether or not a player's move is valid.
         
-        Letters range from A-J and numbers from 1-10.
+        Letters range from A-J (case-insensitive) and numbers from 1-10.
+
         Valid examples:
             `/attack A10`
             
-            `!attack B5`
+            `/attack b5`
 
         Note that a player may only attack a given position once.
+
+        Params:
+        -------
+            `player` (Player): The attacking player
+            `move` (str): The input move to be validated
         """
-        char_nums = {
+        char_to_nums = {
             "A" : 0, "B" : 1, "C" : 2, "D" : 3, "E" : 4,
             "F" : 5, "G" : 6, "H" : 7, "I" : 8, "J" : 9,
         }
@@ -123,7 +118,7 @@ class Game:
         pattern = r'^[a-jA-J](1[0-9]|[1-9])$'
         if re.match(pattern, move):
             # Add 1 from y and x coords for 0-indexing
-            y, x = char_nums[move[0].upper()], int(move[1:]) - 1
+            y, x = char_to_nums[move[0].upper()], int(move[1:]) - 1
             target = player.tracking_board.grid[y][x]
 
             if not target in [HIT, MISS]:
@@ -152,13 +147,18 @@ class Game:
         return attack, sunk 
 
     def commence_attack(self, y: int, x: int):
-        """Perform an attack at the targeted position on the board.
+        """Attacks the targeted `(y, x)` location of the board.
         
-        Returns whether the attack hit a ship and if that ship (if any) was sunk.
+        Returns whether the attack hit a ship and if that ship was sunk.
+
+        Params:
+        -------
+            `y` (int): The y coordinate to attack
+            `x` (int): The x coordinate to attack
         """
         attacker = self.attacker
         defender = self.defender
-        target = defender.board.grid[y][x]
+        target = defender.fleet_board.grid[y][x]
 
         hit = False
         sunk = False
@@ -173,7 +173,7 @@ class Game:
                 sunk = True
 
             attacker.tracking_board.grid[y][x] = HIT
-            defender.board.grid[y][x] = HIT
+            defender.fleet_board.grid[y][x] = HIT
         else:
             self.add_event_to_log([attacker, defender], "attack_miss", [(y, x)])
             attacker.tracking_board.grid[y][x] = MISS

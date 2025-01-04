@@ -78,7 +78,7 @@ class Event():
             "next_turn" : f"It is `{attacker.member.name}'s` turn.",
         }
 
-        return f"{self.event_id}) {event_descriptions.get(self.event_type, "Unknown event")}"
+        return f"{self.event_id}) {event_descriptions.get(self.event_type, 'Unknown event')}"
 
 
 class EventLog():

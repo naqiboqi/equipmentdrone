@@ -8,9 +8,12 @@ a fleet of `ships`, and the associated Discord member.
 import discord
 
 from asyncio import sleep
+from discord.ext import commands
+
 from .board import Board
 from .ship import Ship
 from .boardview import BoardView
+
 
 
 class Player():
@@ -21,19 +24,24 @@ class Player():
     
     Attributes:
     ----------
-        `board` (Board): Used to store the player's ships
+        `fleet_board` (Board): Used to store the player's ships
         `tracking_board` (Board): Used to store the player's hits and misses
         `fleet` (list[Ship]): The player's ships
-        `member` (discord.Member): The Discord member object associated with the player
-        `fleet_msg` (discord.Message): The Discord message used to send and edit the player's fleet
-        `track_msg` (discord.Message): The Discord message used to send and edit the player's hits and misses
+        `member` (discord.Member): The Discord Member object associated with the player
+        `place_msg` (discord.Message): The Discord messaged used to allow the player
+            to choose ship placement
+        `fleet_msg` (discord.Message): The Discord message used to send and
+            edit the player's fleet when hit
+        `track_msg` (discord.Message): The Discord message used to send and
+            edit the player's hits and misses on the enemy
     """
     def __init__(self, member: discord.Member):
-        self.board = Board()
+        self.fleet_board = Board()
         self.tracking_board = Board()
         self.fleet = [Ship(size) for size in [2, 3, 3, 4, 5]]
         self.member = member
 
+        self.place_msg: discord.Message = None
         self.fleet_msg: discord.Message = None
         self.track_msg: discord.Message = None
 
@@ -41,35 +49,52 @@ class Player():
         return self.member == other.member
 
     def get_ship_at(self, y: int, x: int):
-        """Returns the player's ship that is at the given `(y, x)` location."""
+        """Returns the player's `ship` that is at the given `(y, x)` location.
+        
+        Params:
+        -------
+            `y` (int): The y coordinate to look at
+            `x` (int): The x coordinate to look at
+        """
         loc = (y, x)
         for ship in self.fleet:
             if loc in ship.locs:
                 return ship
     
-    async def choose_ship_placement(self, ctx):
-        current_ship = self.fleet[0]
-        self.board.place_ship_(
-            current_ship, 
-            self.board.size // 2,
-            self.board.size // 2,
-            direction="H")
+    async def choose_ship_placement(self, ctx: commands.Context):
+        """Handles the player's `ship` placement through views attached to the board's embed.
         
-        embed = await self.board.create_embed(current_ship)
-        view = BoardView(self.board, current_ship)
+        Randomly places the `ships` at first, then the player can use buttons to change the
+        position of each ship.
+
+        Params:
+        ------
+            `ctx` (commands.Context): The current `context` associated with a command
+        """
+        await self.random_place_ships()
+        
+        embed = self.fleet_board.get_ship_placement_embed()
+        view = BoardView(self.fleet_board, self.fleet)
         
         try:
-            await self.member.send(embed=embed, view=view)
+            self.place_msg = await self.member.send(embed=embed, view=view)
         except discord.errors.Forbidden:
             await ctx.send(f"Could not send the game board to {self.member.mention}, "
                 f"please check you DM settings.")
             
         while not (all(ship.placed for ship in self.fleet)):
-            await sleep(5)
-            
+            await sleep(10)
+
+        await self.place_msg.delete()
+
+        fleet_embed = self.fleet_board.get_fleet_embed()
+        tracking_embed = self.tracking_board.get_tracking_embed()
+        self.fleet_msg = await self.member.send(embed=fleet_embed)
+        self.track_msg = await self.member.send(embed=tracking_embed)
+
     async def random_place_ships(self):
         """Randomly place ships on the player's board."""
-        await self.board.random_place_ships(self.fleet)
+        await self.fleet_board.random_place_ships(self.fleet)
 
     def is_defeated(self):
         """Returns whether all of the player's ships are sunk."""

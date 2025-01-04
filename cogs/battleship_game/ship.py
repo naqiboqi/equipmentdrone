@@ -18,7 +18,8 @@ class Ship():
         For example, a `Ship` of size `4` could look like
         `self.locs = [(1, 0), (2, 0), (3, 0), (4, 0)]`
         
-        `size` (int): The size and starting health of the ship.
+        `size` (int): The size and starting health of the ship
+        `placed` (bool): Whether or not the `ship`'s position is finalized
     """
     def __init__(self, size: int):
         self.health = [True] * size
@@ -41,11 +42,9 @@ class Ship():
         self.health[section] = False
 
     def is_sunk(self):
-        """Returns whether the `Ship` has lost all of its health.
-        
-        A sunken `Ship` has all elements = `False` in `self.health`.
-        """
+        """Returns whether the `Ship` has lost all of its health."""
         return all(hp is False for hp in self.health)
 
     def __str__(self):
+        """Returns a string representation of the `ship`."""
         return f"A ship of size {self.size}. Currently at {self.health.count(True)} hit points."
