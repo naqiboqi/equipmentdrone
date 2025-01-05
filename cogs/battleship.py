@@ -70,7 +70,7 @@ class BattleShip(commands.Cog):
         self.player_games: dict[int, Game] = {}
 
     @commands.hybrid_command(name='battleship')
-    async def start_(self, ctx: commands.Context, member: Optional[discord.Member]):
+    async def start_(self, ctx: commands.Context, member: Optional[discord.Member]=None):
         """Starts a game of battleship between two players, or against you and me!
         
         Player 1 will always go first. If a second player is not specified, then player 1
@@ -89,7 +89,7 @@ class BattleShip(commands.Cog):
 
         if (player_1.member.id in self.player_games or
             player_2.member.id in self.player_games):
-            return await ctx.send("One of the players is already in a` game!")
+            return await ctx.send("One of the players is already in a game!")
 
         game = Game(player_1, player_2, bot_player)
         self.player_games[player_1.member.id] = game
@@ -134,8 +134,8 @@ class BattleShip(commands.Cog):
         await sleep(5.5)
         
         attack, sunk = game.commence_attack(parsed[0], parsed[1])
-        await self.handle_attack_message_(game, attack, sunk)
-        await self.next_turn(ctx, game)
+        await game.handle_attack_message_(attack, sunk)
+        await game.next_turn(ctx)
         
     @commands.hybrid_command(name="movelog")
     async def show_move_log_(self, ctx: commands.Context):
@@ -156,100 +156,10 @@ class BattleShip(commands.Cog):
         view = LogView(pages)
         game.log_message = await ctx.send(embed=pages[0], view=view)
         
-    async def handle_bot_turn_(self, ctx: commands.Context, game: Game):
-        """Commences the bot's turn and send messages showing its actions.
+    @commands.hybrid_command(name="end")
+    async def end_game_vote_(self, ctx: commands.Context):
+        pass
         
-        Params:
-        -------
-            `ctx` (commands.Context): The current `context` associated with a command
-            `game` (Game): The current game instance the bot is in
-        """
-        game.attack_messasge = await game.attack_messasge.edit(content="Thinking.... 🤔")
-        await sleep(random.randint(5, 10))
-        
-        attack, sunk = await game.bot_turn()
-        if attack:
-            game.attack_messasge = await game.attack_messasge.edit(
-                content=f"{game.defender.member.mention}'s ship was hit!")
-            
-            await sleep(3)
-            if sunk:
-                game.attack_messasge.reply("Oopsie! I sunk your ship! 😇")
-        else:
-            game.attack_messasge = await game.attack_messasge.edit(content="Oh, shoot, I missed!")
-
-        await sleep(3)
-        await self.next_turn(ctx, game)
-
-    async def next_turn(self, ctx: commands.Context, game: Game):
-        """Runs the next turn of the game, and checks if the game is over at the end of each turn.
-        
-        Params:
-        -------
-            `ctx` (commands.Context): The current `context` associated with a command
-            `game` (Game): The game instance to progress
-        """
-        player_1 = game.player_1
-        player_2 = game.player_2
-
-        # Edit all of the board messages
-        player_1.fleet_msg = await player_1.fleet_msg.edit(
-            content=f"Player 1 ships: \n```{player_1.fleet_board.__str__()}```")
-
-        player_1.track_msg = await player_1.track_msg.edit(
-            content=f"Player 1 hits/misses: \n```{player_1.tracking_board.__str__()}```")
-
-        player_2.fleet_msg = await player_2.fleet_msg.edit(
-            content=f"Player 2 ships: \n```{player_2.fleet_board.__str__()}```")
-
-        player_2.track_msg = await player_2.track_msg.edit(
-            content=f"Player 2 hits/misses: \n```{player_2.tracking_board.__str__()}```")
-
-        if game.end_turn():
-            return await self.end_game_(ctx, game)
-
-        await self.handle_turn_message_(game)
-        if game.bot_player and game.attacker == game.player_2:
-            await self.handle_bot_turn_(ctx, game)
-
-    async def handle_attack_message_(self, game: Game, attack: bool, sunk: bool):
-        """Sends a message indicating the last attack's outcome.
-        
-        Params:
-            `game` (Game): The game instance
-            `attack` (bool): Whether or not the attack was successful
-            `sunk` (bool): Whether or not the attacked `ship` (if any) was sunk
-        """
-        if attack:
-            message = (
-                "My ship was hit! How dare you!" 
-                if game.bot_player and game.defender == game.player_2 
-                else f"{game.defender.member.mention}'s ship was hit!")
-        else:
-            message = f"{game.attacker.member.mention}, your attack missed!"
-
-        game.attack_messasge = await game.attack_messasge.edit(content=message)
-        
-        await sleep(3)
-        if sunk:
-            await game.attack_messasge.reply("The ship was sunk!", delete_after=10)
-
-        await sleep(5)
-
-    async def handle_turn_message_(self, game: Game):
-        """Sends a message indicating whose turn it is.
-        
-        Params:
-        -------
-            `game` (Game): The current game instance
-        """
-        if game.bot_player and game.attacker == game.player_2:
-            game.turn_message = await game.turn_message.edit(content="It is now my turn!")
-        else:
-            game.turn_message = await game.turn_message.edit(
-                content=f"{game.attacker.member.mention}, it is now your turn!")
-
-        await sleep(5)
 
     async def end_game_(self, ctx: commands.Context, game: Game):
         """Ends the currently running game.

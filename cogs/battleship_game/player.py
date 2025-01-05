@@ -9,7 +9,6 @@ import discord
 
 from asyncio import sleep
 from discord.ext import commands
-
 from .board import Board
 from .ship import Ship
 from .boardview import BoardView
@@ -19,19 +18,19 @@ from .boardview import BoardView
 class Player():
     """Representation of a player in a Battleship game.
     
-    Each player has a board of their own ships and an associated fleet array,
-    and a board to track the hits or misses on their opponent's ships.
+    Each player has a board of their own `ships` and an associated `fleet` array,
+    and a board to track the hits or misses on their opponent's `ships`.
     
     Attributes:
     ----------
-        `fleet_board` (Board): Used to store the player's ships
+        `fleet_board` (Board): Used to store the player's `ships`
         `tracking_board` (Board): Used to store the player's hits and misses
-        `fleet` (list[Ship]): The player's ships
+        `fleet` (list[Ship]): The player's `ships`
         `member` (discord.Member): The Discord Member object associated with the player
         `place_msg` (discord.Message): The Discord messaged used to allow the player
             to choose ship placement
         `fleet_msg` (discord.Message): The Discord message used to send and
-            edit the player's fleet when hit
+            edit the player's `fleet` when hit
         `track_msg` (discord.Message): The Discord message used to send and
             edit the player's hits and misses on the enemy
     """
@@ -62,17 +61,12 @@ class Player():
                 return ship
     
     async def choose_ship_placement(self, ctx: commands.Context):
-        """Handles the player's `ship` placement through views attached to the board's embed.
+        """Handles the player's `ship` placement by using buttons and a dropdown for ship selection.
         
-        Randomly places the `ships` at first, then the player can use buttons to change the
-        position of each ship.
-
         Params:
         ------
             `ctx` (commands.Context): The current `context` associated with a command
         """
-        await self.random_place_ships()
-        
         embed = self.fleet_board.get_ship_placement_embed()
         view = BoardView(self.fleet_board, self.fleet)
         
@@ -82,19 +76,21 @@ class Player():
             await ctx.send(f"Could not send the game board to {self.member.mention}, "
                 f"please check you DM settings.")
             
-        while not (all(ship.placed for ship in self.fleet)):
+        while not (all(ship.final_placed for ship in self.fleet)):
             await sleep(10)
 
         await self.place_msg.delete()
 
+    async def random_place_ships(self):
+        """Randomly place ships on the player's board."""
+        await self.fleet_board.random_place_ships(self.fleet)
+        
+    async def send_board_states(self):
+        """Sends the player's boards as a direct message."""
         fleet_embed = self.fleet_board.get_fleet_embed()
         tracking_embed = self.tracking_board.get_tracking_embed()
         self.fleet_msg = await self.member.send(embed=fleet_embed)
         self.track_msg = await self.member.send(embed=tracking_embed)
-
-    async def random_place_ships(self):
-        """Randomly place ships on the player's board."""
-        await self.fleet_board.random_place_ships(self.fleet)
 
     def is_defeated(self):
         """Returns whether all of the player's ships are sunk."""

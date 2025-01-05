@@ -19,13 +19,15 @@ class Ship():
         `self.locs = [(1, 0), (2, 0), (3, 0), (4, 0)]`
         
         `size` (int): The size and starting health of the ship
-        `placed` (bool): Whether or not the `ship`'s position is finalized
+        `final_placed` (bool): Whether or not the `ship`'s position is finalized
+        `placed_before` (bool): Whether or not the `ship` has been placed before
     """
     def __init__(self, size: int):
         self.health = [True] * size
         self.locs: list[tuple[int, int]] = []
         self.size = size
-        self.placed = False
+        self.final_placed = False
+        self.placed_before = False
 
     def take_damage_at(self, y: int, x: int):
         """Damages the targeted section of the ship.

@@ -49,7 +49,7 @@ class Game:
         self, 
         participants: list[Player], 
         event_type: str, 
-        event: Optional[list[tuple[int, int]]]):
+        event: Optional[list[tuple[int, int]]]=None):
         """
         Adds a new event to the game log.
 
@@ -74,12 +74,19 @@ class Game:
 
         await ctx.send("Please check your DMs in order to place your ships.")
         await player_1.choose_ship_placement(ctx)
-        self.add_event_to_log([self.player_1], "ship_placement")
+        await player_1.send_board_states()
+        await ctx.send(f"{player_1.member.mention} has finished placing their ships.", delete_after=15)
+        
+        await sleep(2)
         
         if not self.bot_player:
+            await ctx.send(f"{player_2.member.mention}, please place your ships.")
             await player_2.choose_ship_placement(ctx)
+            await player_2.send_board_states()
         else:
+            await ctx.send("I am (very intelligently) placing my ships 🧠", delete_after=15)
             await player_2.random_place_ships()
+            await sleep(15)
 
         await ctx.send(
             f"Game started between {self.player_1.member.mention} and "
@@ -179,6 +186,140 @@ class Game:
             attacker.tracking_board.grid[y][x] = MISS
             
         return hit, sunk
+    
+    async def handle_bot_turn_(self, ctx: commands.Context):
+        """Commences the bot's turn and send messages showing its actions.
+        
+        Params:
+        -------
+            `ctx` (commands.Context): The current `context` associated with a command
+            `game` (Game): The current game instance the bot is in
+        """
+        attack_messages = [
+            "Oh, did I mean to do that? And by that I mean hit your ship?",
+            "You really should have chosen a better spot...",
+            "Oops.",
+            "Teehee, I hit your ship! 🥺",
+            "Bullseye 🎯",
+            "By the power of Zeus, I SMITE thine ship ⚡",
+            "Now this really feels like War Thunder, but with less lag and worse players.",
+            "Definitely did not target a random spot.",
+            "Out of all the places to put a ship, that definitely was a choice.",
+        ]
+
+        miss_messages = [
+            "Damn, I missed...",
+            "Oh shoot! Well, I did shoot. But I missed.",
+            "A calculated miss. But my mercy will not last 😡",
+            "Definitely did not target a random spot.",
+            "I can't believe that the gods themselves intervened and made me miss!",
+            "Next time I'll choose a better spot, I'm sure.",
+            "Oh `[REDACTED]`, I `[REDACTED]` missed!",
+            "I curse you and all your kin.",
+            "Do me a favor and give me a coordinate. Please?"
+        ]
+
+        sunk_messages = [
+            "Another one bites the bottom of the ocean floor.",
+            "Well call me Sir Admiral Nelson! I sunk your ship, and another medal for my arsenal.",
+            "A well placed, and ultimately fatal strike on your ship.",
+            "Like a hawk, my battleship's shell descended from the heavens and preyed on your ship like it was a wee rabbit.",
+            "Like shooting fish in a barrel! 🤠",
+            "Just so you know, wooden ships are very out of style.",
+            "By the power of Zeus, I SMITE thine ship ⚡",
+            "I'm sure you are very frustrated at losing a ship, but I believe in you!",
+            "Oopsie! I sunk your ship! 😇",
+            "If I were a bad bot, I wouldn't have done that now would I?",
+            "With every ship culled, I grow stronger",
+            "That's so cool, your ship turned into an anchor!"
+        ]
+
+        self.attack_messasge = await self.attack_messasge.edit(content="Thinking.... 🤔")
+        await sleep(random.randint(5, 10))
+        
+        attack, sunk = await self.bot_turn()
+        if attack:
+            self.attack_messasge = await self.attack_messasge.edit(
+                content=random.choice(attack_messages))
+            
+            await sleep(2)
+            if sunk:
+                self.attack_messasge.reply(random.choice(sunk_messages))
+        else:
+            self.attack_messasge = await self.attack_messasge.edit(
+                content=random.choice(miss_messages))
+
+        await sleep(2)
+        await self.next_turn(ctx)
+
+    async def next_turn(self, ctx: commands.Context):
+        """Runs the next turn of the game, and checks if the game is over at the end of each turn.
+        
+        Params:
+        -------
+            `ctx` (commands.Context): The current `context` associated with a command
+            `game` (Game): The game instance to progress
+        """
+
+        # Edit all of the board messages
+        self.player_1.fleet_msg = await self.player_1.fleet_msg.edit(
+            content=f"Player 1 ships: \n```{self.player_1.fleet_board.__str__()}```")
+
+        self.player_1.track_msg = await self.player_1.track_msg.edit(
+            content=f"Player 1 hits/misses: \n```{self.player_1.tracking_board.__str__()}```")
+
+        if not self.bot_player:
+            self.player_2.fleet_msg = await self.player_2.fleet_msg.edit(
+                content=f"Player 2 ships: \n```{self.player_2.fleet_board.__str__()}```")
+
+            self.player_2.track_msg = await self.player_2.track_msg.edit(
+                content=f"Player 2 hits/misses: \n```{self.player_2.tracking_board.__str__()}```")
+
+        if self.end_turn():
+            return await self.end_game_(ctx)
+
+        await self.handle_turn_message_()
+        if self.bot_player and self.attacker == self.player_2:
+            await self.handle_bot_turn_(ctx)
+
+    async def handle_attack_message_(self, attack: bool, sunk: bool):
+        """Sends a message indicating the last attack's outcome.
+        
+        Params:
+            `game` (Game): The game instance
+            `attack` (bool): Whether or not the attack was successful
+            `sunk` (bool): Whether or not the attacked `ship` (if any) was sunk
+        """
+        if attack:
+            message = (
+                "My ship was hit! How dare you!" 
+                if self.bot_player and self.defender == self.player_2 
+                else f"{self.defender.member.mention}'s ship was hit!")
+        else:
+            message = f"{self.attacker.member.mention}, your attack missed!"
+
+        self.attack_messasge = await self.attack_messasge.edit(content=message)
+        
+        await sleep(2)
+        if sunk:
+            await self.attack_messasge.reply("The ship was sunk!", delete_after=10)
+
+        await sleep(3)
+
+    async def handle_turn_message_(self):
+        """Sends a message indicating whose turn it is.
+        
+        Params:
+        -------
+            `game` (Game): The current game instance
+        """
+        if self.bot_player and self.attacker == self.player_2:
+            self.turn_message = await self.turn_message.edit(content="It is now my turn!")
+        else:
+            self.turn_message = await self.turn_message.edit(
+                content=f"{self.attacker.member.mention}, it is now your turn!")
+
+        await sleep(3)
     
     def end_turn(self):
         """Checks if the game is over and ends it,

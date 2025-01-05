@@ -73,6 +73,18 @@ class Board():
 
         return True
     
+    async def first_placement(self, ship: Ship):
+        """Places the ship on a random valid location on the board.
+        
+        Only happens for the initial placement, when the ship is selected for the first time.
+        
+        Params:
+        -------
+            `ship` (Ship): The ship to place
+        """
+        await self.random_place_ships([ship])
+        ship.placed_before = True
+    
     def place_ship_(self, ship: Ship, y: int, x: int, direction: str):
         """Places a ship at a given location on the board.
         
@@ -186,7 +198,7 @@ class Board():
         for y, x in ship.locs:
             self.grid[y][x] = CONFIRMED_SHIP
             
-        ship.placed = True
+        ship.final_placed = True
         
     def select_ship(self, ship: Ship):
         """Selects and highlights the given `ship` so that the player may choose its location.
@@ -198,7 +210,7 @@ class Board():
         for y, x in ship.locs:
             self.grid[y][x] = CURRENT_SHIP
             
-        ship.placed = False
+        ship.final_placed = False
             
     def deselect_ship(self, ship: Ship):
         """Deselects the given `ship` for placement.
@@ -210,7 +222,7 @@ class Board():
         for y, x in ship.locs:
             self.grid[y][x] = SHIP_NOT_CONFIRMED
 
-    def get_ship_placement_embed(self, current_ship: Optional[Ship]):
+    def get_ship_placement_embed(self, current_ship: Optional[Ship]=None):
         """Returns an `embed` showing the currently selected `ship` and
         the player's `fleet` on the board.
         
@@ -245,9 +257,14 @@ class Board():
             color=discord.Color.dark_magenta()
         )
 
-        embed.add_field(name="These are your ships. Guard them with your life!")
-        embed.add_field(name="Healthy ships have their sections marked as ⏹️")
-        embed.add_field(name="Damaged ships have their sections marked as 🟥")
+        embed.add_field(
+            name="These are your ships, guard them with your life!",
+            value=
+            """
+            Healthy ships have their sections marked as ⏹️
+            Damaged ships have their sections marked as 🟥
+            """)
+        
         return embed
     
     def get_tracking_embed(self):
@@ -260,8 +277,13 @@ class Board():
             color=discord.Color.red()
         )
 
-        embed.add_field(name="Your hits on enemy ships are marked with 🟥")
-        embed.add_field(name="Your misses are marked with ⬜")
+        embed.add_field(
+            name="Each attack on your enemy can have one of two results. You may only attack a position once!",
+            value="""
+            Your hits on enemy ships are marked with 🟥
+            Your misses are marked with ⬜
+            """)
+        
         return embed
 
     def __str__(self):
