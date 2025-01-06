@@ -94,10 +94,7 @@ class Game:
 
         player_1.set_ship_names(SHIP_NAMES[player_1.country])
         player_2.set_ship_names(SHIP_NAMES[player_2.country])
-        await self.country_message = self.country_message.edit(
-            content=f"""
-                {player_1.member.name} has chosen {player_1.country}.
-                {player_2.member.name} has chosen {player_2.country}.""")
+        self.country_message = await self.country_message.edit(view=None)
         
         await sleep(5)
         await ctx.send("Now check your DMs to place your ships.")
@@ -288,20 +285,10 @@ class Game:
             `ctx` (commands.Context): The current `context` associated with a command
             `game` (Game): The game instance to progress
         """
-
-        # Edit all of the board messages
-        self.player_1.fleet_msg = await self.player_1.fleet_msg.edit(
-            content=f"Player 1 ships: \n```{self.player_1.fleet_board.__str__()}```")
-
-        self.player_1.track_msg = await self.player_1.track_msg.edit(
-            content=f"Player 1 hits/misses: \n```{self.player_1.tracking_board.__str__()}```")
+        await self.player_1.update_board_states()
 
         if not self.bot_player:
-            self.player_2.fleet_msg = await self.player_2.fleet_msg.edit(
-                content=f"Player 2 ships: \n```{self.player_2.fleet_board.__str__()}```")
-
-            self.player_2.track_msg = await self.player_2.track_msg.edit(
-                content=f"Player 2 hits/misses: \n```{self.player_2.tracking_board.__str__()}```")
+            await self.player_2.update_board_states()
 
         if self.end_turn():
             return await self.end_game_(ctx)
