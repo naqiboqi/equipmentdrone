@@ -5,8 +5,9 @@ import re
 from asyncio import sleep
 from discord.ext import commands
 from typing import Optional
-from ..event_log import EventLog
+from .countryview import CountryView, SHIP_NAMES
 from .player import Player
+from ..utils import EventLog
 
 
 
@@ -28,10 +29,12 @@ class Game:
         `bot_player` (bool): If player_2 is a bot or not
         `attacker` (Player): The player who is currently attacking
         `defender` (Player): The player who is currently defending
+        `log_` (EventLog): Used to track of all the hits, misses, and sunken ships
         
-        `attack_messasge` (discord.Message): The Discord message used to send and edit the current attack status
-        `turn_message` (discord.Message): The Discord message used to send and edit the current turn status
-        `log_` (EventLog): Keeps tracks of all the hits, misses, and sunken ships
+        `country_message` (discord.Message): Used to send the players' country choices
+        `attack_messasge` (discord.Message): Used to send and edit the current attack status
+        `turn_message` (discord.Message): Used to send and edit the current turn status
+        `log_message` (discord.Message): Used to send the `log` entries
     """
     def __init__(self, player_1: Player, player_2: Player, bot_player: bool=False):
         self.player_1 = player_1
@@ -41,6 +44,7 @@ class Game:
         self.defender = player_2
         self.log_ = EventLog()
         
+        self.country_message: discord.Message = None
         self.attack_messasge: discord.Message = None
         self.turn_message: discord.Message = None
         self.log_message: discord.Message = None
@@ -62,8 +66,7 @@ class Game:
         self.log_.add_event(participants, event_type, event)
 
     async def setup(self, ctx: commands.Context):
-        """Sets the initial game state, placing player's ships
-        and sends the initial boards to the players.
+        """Sets the initial game state.
 
         Params:
         -------
@@ -72,13 +75,38 @@ class Game:
         player_1 = self.player_1
         player_2 = self.player_2
 
-        await ctx.send("Please check your DMs in order to place your ships.")
+        embed = discord.Embed(
+            title="Select a country to carry to lead to victory 🌎",
+            color=discord.Color.blue()
+        )
+
+        view = CountryView(player_1, player_2)
+        self.country_message = await ctx.send(embed=embed, view=view)
+
+        if self.bot_player:
+            bot_choices = [
+                country for country in SHIP_NAMES.keys() if country != player_1.country]
+            player_2.country = random.choice(bot_choices)
+
+        # Wait until both players have chosen a country
+        while not player_1.country or not player_2.country:
+            await sleep(5)
+
+        player_1.set_ship_names(SHIP_NAMES[player_1.country])
+        player_2.set_ship_names(SHIP_NAMES[player_2.country])
+        await self.country_message = self.country_message.edit(
+            content=f"""
+                {player_1.member.name} has chosen {player_1.country}.
+                {player_2.member.name} has chosen {player_2.country}.""")
+        
+        await sleep(5)
+        await ctx.send("Now check your DMs to place your ships.")
         await player_1.choose_ship_placement(ctx)
         await player_1.send_board_states()
-        await ctx.send(f"{player_1.member.mention} has finished placing their ships.", delete_after=15)
+        await ctx.send(f"{player_1.member.mention} has finished placing their ships.",
+            delete_after=15)
         
         await sleep(2)
-        
         if not self.bot_player:
             await ctx.send(f"{player_2.member.mention}, please place your ships.")
             await player_2.choose_ship_placement(ctx)

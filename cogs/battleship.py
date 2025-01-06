@@ -47,13 +47,12 @@ game setup, turn-based play, and result tracking.
 
 
 import discord
-import random
 
 from asyncio import sleep
 from discord.ext import commands
 from typing import Optional
 from .battleship_game import Player, Game
-from .event_log import LogView
+from .utils import LogView
 
 
 
@@ -156,11 +155,6 @@ class BattleShip(commands.Cog):
         view = LogView(pages)
         game.log_message = await ctx.send(embed=pages[0], view=view)
         
-    @commands.hybrid_command(name="end")
-    async def end_game_vote_(self, ctx: commands.Context):
-        pass
-        
-
     async def end_game_(self, ctx: commands.Context, game: Game):
         """Ends the currently running game.
         
