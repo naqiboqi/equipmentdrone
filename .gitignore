@@ -4,7 +4,7 @@
 /ffmpeg.exe
 /cogs/__pycache__
 /cogs/battleship_game/__pycache__
-/cogs/event_log/__pycache__
+/cogs/utils/__pycache__
 /cogs/video_load/__pycache__
 /cogs/dnd_game/__pycache__
 /misc/__pycache__
