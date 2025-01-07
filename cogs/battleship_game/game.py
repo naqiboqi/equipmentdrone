@@ -110,7 +110,7 @@ class Game:
             await player_2.send_board_states()
         else:
             await ctx.send("I am (very intelligently) placing my ships 🧠", delete_after=15)
-            await player_2.random_place_ships()
+            player_2.random_place_ships()
             await sleep(15)
 
         await ctx.send(
@@ -190,7 +190,7 @@ class Game:
         """
         attacker = self.attacker
         defender = self.defender
-        target = defender.fleet_board.grid[y][x]
+        target = defender.defense_board.grid[y][x]
 
         hit = False
         sunk = False
@@ -205,7 +205,7 @@ class Game:
                 sunk = True
 
             attacker.tracking_board.grid[y][x] = HIT
-            defender.fleet_board.grid[y][x] = HIT
+            defender.defense_board.grid[y][x] = HIT
         else:
             self.add_event_to_log([attacker, defender], "attack_miss", [(y, x)])
             attacker.tracking_board.grid[y][x] = MISS

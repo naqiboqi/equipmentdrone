@@ -37,7 +37,7 @@ class BoardView(discord.ui.View):
     """
     def __init__(self, board: Board, fleet: list[Ship], *, timeout=180):
         super().__init__(timeout=timeout)
-        self.board = board
+        self.placement_board = board
         self.current: int = None
         self.fleet = fleet
 
@@ -51,10 +51,10 @@ class BoardView(discord.ui.View):
             `ship` (Ship): The `ship` to place
         """
         if not ship.placed_before:
-            await self.board.first_placement(ship)
+            self.placement_board.first_placement(ship)
             
-        self.board.select_ship(ship)
-        embed = self.board.get_ship_placement_embed(ship)
+        self.placement_board.select_ship(ship)
+        embed = self.placement_board.get_ship_placement_embed(ship)
         await interaction.response.edit_message(embed=embed)
         
     @discord.ui.select(
@@ -76,7 +76,7 @@ class BoardView(discord.ui.View):
             ship = self.fleet[self.current]
 
             if not ship.final_placed:
-                self.board.confirm_ship(ship)
+                self.placement_board.confirm_ship(ship)
 
         self.current = int(select.values[0]) - 1
         ship = self.fleet[self.current]
@@ -94,9 +94,9 @@ class BoardView(discord.ui.View):
         ship = self.fleet[self.current]
         dx = -1
 
-        if self.board.is_valid_move_loc(ship, dx=dx):
-            self.board.move_ship(ship, dx=dx)
-            embed = self.board.get_ship_placement_embed(ship)
+        if self.placement_board.is_valid_move_loc(ship, dx=dx):
+            self.placement_board.move_ship(ship, dx=dx)
+            embed = self.placement_board.get_ship_placement_embed(ship)
             await interaction.response.edit_message(embed=embed)
         else:
             await interaction.response.defer()
@@ -113,9 +113,9 @@ class BoardView(discord.ui.View):
         ship = self.fleet[self.current]
         dy = -1
 
-        if self.board.is_valid_move_loc(ship, dy=dy):
-            self.board.move_ship(ship, dy=dy)
-            embed = self.board.get_ship_placement_embed(ship)
+        if self.placement_board.is_valid_move_loc(ship, dy=dy):
+            self.placement_board.move_ship(ship, dy=dy)
+            embed = self.placement_board.get_ship_placement_embed(ship)
             await interaction.response.edit_message(embed=embed)
         else:
             await interaction.response.defer()
@@ -132,9 +132,9 @@ class BoardView(discord.ui.View):
         ship = self.fleet[self.current]
         dx = 1
 
-        if self.board.is_valid_move_loc(ship, dx=dx):
-            self.board.move_ship(ship, dx=dx)
-            embed = self.board.get_ship_placement_embed(ship)
+        if self.placement_board.is_valid_move_loc(ship, dx=dx):
+            self.placement_board.move_ship(ship, dx=dx)
+            embed = self.placement_board.get_ship_placement_embed(ship)
             await interaction.response.edit_message(embed=embed)
         else:
             await interaction.response.defer()
@@ -151,9 +151,9 @@ class BoardView(discord.ui.View):
         ship = self.fleet[self.current]
         dy = 1
         
-        if self.board.is_valid_move_loc(ship, dy=dy):
-            self.board.move_ship(ship, dy=dy)
-            embed = self.board.get_ship_placement_embed(ship)
+        if self.placement_board.is_valid_move_loc(ship, dy=dy):
+            self.placement_board.move_ship(ship, dy=dy)
+            embed = self.placement_board.get_ship_placement_embed(ship)
             await interaction.response.edit_message(embed=embed)
         else:
             await interaction.response.defer()
@@ -171,7 +171,7 @@ class BoardView(discord.ui.View):
             return await interaction.response.send_message("Select a ship first!", delete_after=5)
         
         ship = self.fleet[self.current]
-        self.board.confirm_ship(ship)
+        self.placement_board.confirm_ship(ship)
         
         self.current = next((i for i, ship in enumerate(self.fleet) if not ship.final_placed), None)
         if self.current is not None:
@@ -192,9 +192,9 @@ class BoardView(discord.ui.View):
         ship = self.fleet[self.current]
         direction = "V"
 
-        if self.board.is_valid_rotation(ship, direction=direction):
-            self.board.rotate_ship(ship, direction=direction)
-            embed = self.board.get_ship_placement_embed(ship)
+        if self.placement_board.is_valid_rotation(ship, direction=direction):
+            self.placement_board.rotate_ship(ship, direction=direction)
+            embed = self.placement_board.get_ship_placement_embed(ship)
             await interaction.response.edit_message(embed=embed)
         else:
             await interaction.response.defer()
@@ -211,9 +211,9 @@ class BoardView(discord.ui.View):
         ship = self.fleet[self.current]
         direction="H"
 
-        if self.board.is_valid_rotation(ship, direction=direction):
-            self.board.rotate_ship(ship, direction=direction)
-            embed = self.board.get_ship_placement_embed(ship)
+        if self.placement_board.is_valid_rotation(ship, direction=direction):
+            self.placement_board.rotate_ship(ship, direction=direction)
+            embed = self.placement_board.get_ship_placement_embed(ship)
             await interaction.response.edit_message(embed=embed)
         else:
             await interaction.response.defer()
