@@ -103,21 +103,13 @@ class BattleShip(commands.Cog):
 
         Params:
         -------
-            move : str
-                The location on the board to attack.
-            
-                Must be a letter-number combination where the
-                letter must be from A to J and the number from 1 to 10
-        
-        If the attack command is valid, performs an attack on the board and
-        then proceeds to the next turn, or prompts the user again if invalid.
-
-        Params:
-        -------
             ctx: commands.Context
                 The current context associated with a command.
             move : str
                 The input move to be validated.
+        
+        If the attack command is valid, performs an attack on the board and
+        then proceeds to the next turn, or prompts the user again if invalid.
         """
         game = self.player_games.get(ctx.author.id)
         if not game:
