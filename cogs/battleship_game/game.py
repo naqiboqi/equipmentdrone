@@ -24,17 +24,27 @@ class Game:
     
     Attributes:
     ----------
-        `player_1` (Player): The first player of the game, who initiated it
-        `player_2` (Player): The second player, can be another Discord user or the bot itself
-        `bot_player` (bool): If player_2 is a bot or not
-        `attacker` (Player): The player who is currently attacking
-        `defender` (Player): The player who is currently defending
-        `log_` (EventLog): Used to track of all the hits, misses, and sunken ships
+        player_1 : Player
+            The first player of the game, who initiated it.
+        player_2 : Player
+            The second player, can be another Discord user or the bot itself.
+        bot_player : bool
+            If player_2 is a bot or not.
+        attacker : Player
+            The player who is currently attacking.
+        defender : Player
+            The player who is currently defending.
+        log_ : EventLog
+            Used to store and send entries of game events.
         
-        `country_message` (discord.Message): Used to send the players' country choices
-        `attack_messasge` (discord.Message): Used to send and edit the current attack status
-        `turn_message` (discord.Message): Used to send and edit the current turn status
-        `log_message` (discord.Message): Used to send the `log` entries
+        country_message: discord.Message
+            Used to send the players' country choices.
+        attack_message : discord.Message
+            Used to send and edit the current attack status.
+        turn_message : discord.Message
+            Used to send and edit the current turn status.
+        log_message : discord.Message
+            Used to send the log entries.
     """
     def __init__(self, player_1: Player, player_2: Player, bot_player: bool=False):
         self.player_1 = player_1
@@ -59,9 +69,12 @@ class Game:
 
         Params:
         -------
-            `participants` (list[Player]): The players involved in the event
-            `event_type` (str): A tag to represent the type of the event
-            `event` (list[tuple[int, int]]|None): Coordinates of the event, if any
+            participants: list[Player] 
+                The players involved in the event.
+            event_type : str
+                A tag to represent the type of the event.
+            event : list[tuple[int, int]] 
+                Coordinates of the event, if any.
         """
         self.log_.add_event(participants, event_type, event)
 
@@ -70,7 +83,8 @@ class Game:
 
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command
+            ctx : commands.Context
+                The current context associated with a command.
         """
         player_1 = self.player_1
         player_2 = self.player_2
@@ -139,8 +153,10 @@ class Game:
 
         Params:
         -------
-            `player` (Player): The attacking player
-            `move` (str): The input move to be validated
+            player : Player
+                The attacking player.
+            move : str
+                The input move to be validated.
         """
         char_to_nums = {
             "A" : 0, "B" : 1, "C" : 2, "D" : 3, "E" : 4,
@@ -162,8 +178,7 @@ class Game:
     async def bot_turn(self):
         """Simultates the bot's turn. 
         
-        The bot will choose a random valid spot on the board to attack,
-        and utilizes the `commence_attack(y, x)` method.
+        The bot will choose a random valid spot on the board to attack.
         
         Returns whether or not the attack missed.
         """      
@@ -185,8 +200,10 @@ class Game:
 
         Params:
         -------
-            `y` (int): The y coordinate to attack
-            `x` (int): The x coordinate to attack
+            y : int
+                The y coordinate to attack.
+            x : int
+                The x coordinate to attack.
         """
         attacker = self.attacker
         defender = self.defender
@@ -217,8 +234,10 @@ class Game:
         
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command
-            `game` (Game): The current game instance the bot is in
+            ctx: commands.Context
+                The current context associated with a command.
+            game : Game
+                The current game instance the bot is in.
         """
         attack_messages = [
             "Oh, did I mean to do that? And by that I mean hit your ship?",
@@ -282,8 +301,10 @@ class Game:
         
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command
-            `game` (Game): The game instance to progress
+            ctx : commands.Context
+                The current context associated with a command
+            game : Game
+                The game instance to progress
         """
         await self.player_1.update_board_states()
 
@@ -326,7 +347,8 @@ class Game:
         
         Params:
         -------
-            `game` (Game): The current game instance
+            game : Game
+                The current game instance
         """
         if self.bot_player and self.attacker == self.player_2:
             self.turn_message = await self.turn_message.edit(content="It is now my turn!")
@@ -337,9 +359,7 @@ class Game:
         await sleep(3)
     
     def end_turn(self):
-        """Checks if the game is over and ends it,
-        or continues to the next turn otherwise.
-        """
+        """Checks if the game is over and ends it, or continues to the next turn otherwise."""
         if self.is_over_():
             self.add_event_to_log([self.attacker, self.defender], "finished_game")
             return True
@@ -348,7 +368,7 @@ class Game:
         return False
 
     def is_over_(self):
-        """Returns whether or not the game is over (if either player has no ships)."""
+        """Returns whether or not the game is over (eg. if either player has no ships)."""
         return self.player_1.is_defeated() or self.player_2.is_defeated()
 
     def next_turn_(self):

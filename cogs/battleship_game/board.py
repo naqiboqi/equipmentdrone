@@ -281,7 +281,7 @@ class DefenseBoard(Board):
         Params:
         -------
             ship : Ship
-                The ship to select
+                The ship to select.
         """
         for y, x in ship.locs:
             self.grid[y][x] = CURRENT_SHIP

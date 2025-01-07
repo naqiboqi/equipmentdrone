@@ -31,9 +31,12 @@ class BoardView(discord.ui.View):
 
         Attributes:
         ----------
-            `board` (Board): The board to interact with
-            `current` (int): The current `ship` value to move
-            `fleet` (list[Ship]): The ships to choose between
+            board : Board
+                The board to interact with
+            current : int
+                The current ship value to move
+            fleet : list[Ship] 
+                The ships to choose between
     """
     def __init__(self, board: Board, fleet: list[Ship], *, timeout=180):
         super().__init__(timeout=timeout)
@@ -42,13 +45,15 @@ class BoardView(discord.ui.View):
         self.fleet = fleet
 
     async def select_ship_(self, interaction: discord.Interaction, ship: Ship):
-        """Selects a `ship` to be placed. Occurs when the user selects the ship manually
-        or when the previous `ship`'s location is confirmed from `confirm_ship_placement_()`.
+        """Selects a ship to be placed. Occurs when the user selects the ship manually
+        or when the previous ship's location is confirmed.
         
         Params:
         -------
-            `interaction` (discord.Interaction): The interaction for this context
-            `ship` (Ship): The `ship` to place
+            interaction: discord.Interaction
+                The interaction for this context
+            ship : Ship
+                The ship to place
         """
         if not ship.placed_before:
             self.placement_board.first_placement(ship)
@@ -64,13 +69,13 @@ class BoardView(discord.ui.View):
         self,
         interaction: discord.Interaction,
         select: discord.ui.Select):
-        """Allows the user to select a `ship` to place from a dropdown menu.
+        """Allows the user to select a ship to place from a dropdown menu.
         
-        If the `ship` is being selected for the first time, it will be randomly placed
-        on the `board` to start.
+        If the ship is being selected for the first time, it will be randomly placed
+        on the board to start.
 
-        If a `ship` was selected and the user is now selecting a new ship, confirms
-        the placement of the previous `ship`. 
+        If a ship was selected and the user is now selecting a new ship, confirms
+        the placement of the previous ship. 
         """
         if self.current:        
             ship = self.fleet[self.current]
@@ -87,7 +92,7 @@ class BoardView(discord.ui.View):
         self,
         interaction: discord.Interaction,
         button: discord.ui.Button):
-        """Moves the currently selected `ship` one step to the left if the move is valid."""
+        """Moves the currently selected ship one step to the left if the move is valid."""
         if self.current is None:
             return await interaction.response.send_message("Select a ship first!", delete_after=5)
         
@@ -106,7 +111,7 @@ class BoardView(discord.ui.View):
         self,
         interaction: discord.Interaction,
         button: discord.ui.Button):
-        """Moves the currently selected `ship` one step up if the move is valid."""
+        """Moves the currently selected ship one step up if the move is valid."""
         if self.current is None:
             return await interaction.response.send_message("Select a ship first!", delete_after=5)
         
@@ -125,7 +130,7 @@ class BoardView(discord.ui.View):
         self,
         interaction: discord.Interaction,
         button: discord.ui.Button):
-        """Moves the currently selected `ship` one step to the right if the move is valid."""
+        """Moves the currently selected ship one step to the right if the move is valid."""
         if self.current is None:
             return await interaction.response.send_message("Select a ship first!", delete_after=5)
         
@@ -144,7 +149,7 @@ class BoardView(discord.ui.View):
         self,
         interaction: discord.Interaction,
         button: discord.ui.Button):
-        """Moves the currently selected `ship` one step down if the move is valid."""
+        """Moves the currently selected ship one step down if the move is valid."""
         if self.current is None:
             return await interaction.response.send_message("Select a ship first!", delete_after=5)
         
@@ -163,9 +168,9 @@ class BoardView(discord.ui.View):
         self,
         interaction: discord.Interaction,
         button: discord.ui.Button):
-        """Confirms the placement of the currently selected `ship` on the board.
+        """Confirms the placement of the currently selected ship on the board.
         
-        Moves to the next `ship in the `fleet` that is not placed, unless all ships have been placed.
+        Moves to the next ship in the fleet that is not placed, unless all ships have been placed.
         """
         if self.current is None:
             return await interaction.response.send_message("Select a ship first!", delete_after=5)
@@ -185,7 +190,7 @@ class BoardView(discord.ui.View):
         self,
         interaction: discord.Interaction,
         button: discord.ui.Button):
-        """Rotates the currently selected `ship` to a vertical orientation if valid."""
+        """Rotates the currently selected ship to a vertical orientation if valid."""
         if self.current is None:
             return await interaction.response.send_message("Select a ship first!", delete_after=5)
         
@@ -204,7 +209,7 @@ class BoardView(discord.ui.View):
         self,
         interaction: discord.Interaction,
         button: discord.ui.Button):
-        """Rotates the currently selected `ship` to a horizontal orientation if valid."""
+        """Rotates the currently selected ship to a horizontal orientation if valid."""
         if self.current is None:
             return await interaction.response.send_message("Select a ship first!", delete_after=5)
         
