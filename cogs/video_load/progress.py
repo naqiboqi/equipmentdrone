@@ -3,15 +3,21 @@ This module defines a `ProgressBar` class for visually representing the progress
 of a video.
 """
 
+
+
 class ProgressBar():
     """Represents a video's progress bar with a slider denoting the elapsed time.
-    
+
     Attributes:
     -----------
-    `vid_length` (float): The length of the video, in seconds.
-    `size` (int): The character length of the progress bar.
-    `line` (str): The character used to represent the line.
-    `slider` (str): The character used to represent the current time in the progress bar.
+    vid_length: float
+        The length of the video, in seconds.
+    size: int
+        The character length of the progress bar.
+    line: str
+        The character used to represent the line.
+    slider: str
+        The character used to represent the current time in the progress bar.
     """
     def __init__(self, vid_length: float):
         self.vid_length = vid_length
@@ -21,19 +27,21 @@ class ProgressBar():
 
     def is_complete(self, elapsed_time: float):
         """Returns if whether video is completed or not.
-        
+
         Params:
         ------
-            `elapsed_time` (float): The elapsed time of the video, in seconds.
+            elapsed_time: float
+                The elapsed time of the video, in seconds.
         """
         return elapsed_time >= self.vid_length
 
     def display(self, elapsed_time: float):
         """Returns a string representation of progress bar with the current progress of the video.
-        
+
         Params:
         ------
-            `elapsed_time` (float): The elapsed time of the video, in seconds.
+            elapsed_time: float
+                The elapsed time of the video, in seconds.
         """
         if self.is_complete(elapsed_time):
             string_bar = self.line * (self.size - 1) + self.slider

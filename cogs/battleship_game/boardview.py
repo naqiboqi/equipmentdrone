@@ -23,20 +23,21 @@ from .ship import Ship
 
 
 class BoardView(discord.ui.View):
-    """A Discord UI View for managing ship placement in a Battleship-style game.
+    """
+    A Discord UI View for managing ship placement in a Battleship-style game.
 
-        This class provides an interactive interface for players to place their ships on a game board 
-        using Discord's UI components, including buttons and dropdown menus. Players can move ships, 
-        rotate them, and confirm their placement.
+    This class provides an interactive interface for players to place their ships on a game board 
+    using Discord's UI components, including buttons and dropdown menus. Players can move ships, 
+    rotate them, and confirm their placement.
 
-        Attributes:
-        ----------
-            board : Board
-                The board to interact with
-            current : int
-                The current ship value to move
-            fleet : list[Ship] 
-                The ships to choose between
+    Attributes:
+    ----------
+        board : Board
+            The board to interact with.
+        current : int
+            The current ship value to move.
+        fleet : list[Ship] 
+            The ships to choose between.
     """
     def __init__(self, board: Board, fleet: list[Ship], *, timeout=180):
         super().__init__(timeout=timeout)
@@ -51,9 +52,9 @@ class BoardView(discord.ui.View):
         Params:
         -------
             interaction: discord.Interaction
-                The interaction for this context
+                The interaction for this context.
             ship : Ship
-                The ship to place
+                The ship to place.
         """
         if not ship.placed_before:
             self.placement_board.first_placement(ship)
