@@ -58,19 +58,32 @@ class VideoPlayer:
 
     Attributes:
     -----------
-        `bot` (commands.Bot): The bot instance.
-        `channel` (MessagableChannel): The channel associated with a command.
-        `cog` (commands.Cog): The cog associated with the current context's command.
-        `ctx` (commands.Context): The current context associated with a command.
-        `guild` (Guild): The current guild associated with a command.
-        `next` (asyncio.Event): The signal to start the next video in the queue.
-        `queue` asyncio.Queue): The queue storing upcoming videos.
-        `current` (Video): The currently playing video.
-        `now_playing_embed` (Embed): The embed storing the player's current information.
-        `queue_embed` (Embed): The embed storing the upcoming videos' information.
-        `loop` (bool): Whether the player is looping the current video.
-        `paused` (bool): Whether the player is paused.
-        `volume` (float): The current volume of the player as a percentage.
+        bot : commands.Bot
+            The bot instance.
+        channel : discord.MessagableChannel
+            The channel associated with a command.
+        cog : discord.commands.Cog
+            The cog associated with the current context's command.
+        ctx : commands.Context
+            The current context associated with a command.
+        guild : discord.Guild
+            The current guild associated with a command.
+        next : asyncio.Event
+            The signal to start the next video in the queue.
+        queue : asyncio.Queue
+            The queue storing upcoming videos.
+        current : Video
+            The currently playing video.
+        now_playing_embed : discord.Embed
+            The embed storing the player's current information.
+        queue_embed : discord.Embed
+            The embed storing the upcoming videos' information.
+        loop : bool
+            Whether the player is looping the current video.
+        paused : bool
+            Whether the player is paused.
+        volume : float
+            The current volume of the player as a percentage.
     """
     def __init__(self, ctx: commands.Context):
         self.bot: commands.bot = ctx.bot
@@ -98,7 +111,8 @@ class VideoPlayer:
 
         Params:
         -------
-            `start_time` (float): The start time of the video.
+            start_time : float 
+                The start time of the video.
         """
         paused_time = 0.00
         while True:
@@ -137,7 +151,8 @@ class VideoPlayer:
 
         Params:
         -------
-            `elapsed_time` (float): The elapsed time of the video, in seconds.
+            elapsed_time : float
+                The elapsed time of the video, in seconds.
         """
         now_playing_embed = await self.current.display(elapsed_time)
         await self.now_playing_embed.edit(embed=now_playing_embed)
