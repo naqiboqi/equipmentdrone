@@ -38,9 +38,7 @@ game setup, turn-based play, and result tracking.
 
 ### Dependencies:
 - **`discord`**: For interacting with Discord APIs and handling bot commands.
-- **`random`**: For randomizing ship placement.
 - ** `typing`**: For optional type annotations.
-- **`re`**: For matching user input attack strings.
 - **`asyncio`**: For sleep delays.
 - **`battleship_game`**: Game 
 """
@@ -61,8 +59,10 @@ class BattleShip(commands.Cog):
     
     Attributes:
     ----------
-        `bot`: The current bot instance
-        `player_games` (dict[int, Game]): Stores the games associated with each player
+        bot : commands.Bot
+            The current bot instance.
+        player_games : dict[int, Game]
+            Stores the games associated with each player.
     """
     def __init__(self, bot):
         self.bot = bot
@@ -70,16 +70,17 @@ class BattleShip(commands.Cog):
 
     @commands.hybrid_command(name='battleship')
     async def start_(self, ctx: commands.Context, member: Optional[discord.Member]=None):
-        """Starts a game of battleship between two players, or against you and me!
+        """Starts a game of battleship between two players, or against the me!
         
         Player 1 will always go first. If a second player is not specified, then player 1
         will play against the bot. Players may only participate in one game at a time.
 
         Params:
         -------
-            ctx (commands.Context): The current `context` associated with a command
-            member (discord.Member|None): The other Discord `member` to play against.
-            If `None`, play agains the bot.
+            ctx: commands.Context
+                The current context associated with a command.
+            member : discord.Member
+                The other Discord `member` to play against. If `None`, plays agains the bot.
         """
         player_1 = Player(ctx.message.author)
 
@@ -102,21 +103,21 @@ class BattleShip(commands.Cog):
 
         Params:
         -------
-            `move` (str): The location on the board to attack.
+            move : str
+                The location on the board to attack.
             
-            Must be a letter-number combination where the letter must be from A to J and
-            the number from 1 to 10
-        
-        Valid attacks are determined by the method `game.is_move_valid()` method.
-        A player may only attack a given position once.
+                Must be a letter-number combination where the
+                letter must be from A to J and the number from 1 to 10
         
         If the attack command is valid, performs an attack on the board and
         then proceeds to the next turn, or prompts the user again if invalid.
 
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command
-            `move` (str): The input move to be validated
+            ctx: commands.Context
+                The current context associated with a command.
+            move : str
+                The input move to be validated.
         """
         game = self.player_games.get(ctx.author.id)
         if not game:
@@ -142,7 +143,8 @@ class BattleShip(commands.Cog):
         
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command
+            ctx: commands.Context
+                The current context associated with a command.
         """
         game = self.player_games.get(ctx.author.id)
         if not game:
@@ -160,8 +162,10 @@ class BattleShip(commands.Cog):
         
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command
-            `game` (Game): The game instance to end
+            ctx: commands.Context
+                The current context associated with a command.
+            game : Game
+                The game instance to end.
         """
         player_1 = game.player_1
         player_2 =  game.player_2
