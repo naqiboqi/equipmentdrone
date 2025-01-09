@@ -106,7 +106,7 @@ class CountryView(discord.ui.View):
         elif self.player_2.member == member:
             self.player_1.country = country_names[int(select.values[0])]
         else:
-            return await interaction.defer()
+            return await interaction.response.defer()
         
         embed = discord.Embed(
             title="Select a country to lead to victory 🌎",
