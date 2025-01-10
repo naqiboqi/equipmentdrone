@@ -64,7 +64,7 @@ def load_ship_names_() -> dict[str, dict[str, list[str]]]:
 
 
 SHIP_NAMES = load_ship_names_()
-"""Dictionary containing the countries loaded from the `ship_names.json` file."""
+"""Dictionary containing the countries loaded from `ship_names.json`."""
 
 
 class CountryView(discord.ui.View):
@@ -89,7 +89,7 @@ class CountryView(discord.ui.View):
         self.player_2 = player_2
 
     @discord.ui.select(
-        placeholder="Select a country to play as",
+        placeholder="Select a country",
         options=[
             discord.SelectOption(label=country, value=str(i))
             for i, country in enumerate(SHIP_NAMES.keys())])
