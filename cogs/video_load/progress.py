@@ -26,7 +26,7 @@ class ProgressBar():
         self.slider = "🔘"
 
     def is_complete(self, elapsed_time: float):
-        """Returns if whether video is completed or not.
+        """Returns if whether the video is completed or not.
 
         Params:
         ------

@@ -139,7 +139,7 @@ class VideoPlayer:
         
         If the embed already exists, updates the current embed.
         """
-        now_playing_embed = await self.current.display()
+        now_playing_embed = await self.current.get_video_details()
 
         try:
             self.now_playing_embed = await self.now_playing_embed.edit(embed=now_playing_embed)
@@ -154,7 +154,7 @@ class VideoPlayer:
             elapsed_time : float
                 The elapsed time of the video, in seconds.
         """
-        now_playing_embed = await self.current.display(elapsed_time)
+        now_playing_embed = await self.current.get_video_details(elapsed_time)
         await self.now_playing_embed.edit(embed=now_playing_embed)
 
     async def player_loop(self):

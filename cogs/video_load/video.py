@@ -273,7 +273,7 @@ class Video(discord.PCMVolumeTransformer):
         self.start_time = start_time
         self.volume = volume
 
-    async def display(self, elapsed_time: float = 0.00):
+    async def get_video_details(self, elapsed_time: float = 0.00):
         """Returns an embed containing the details of the video source object.
 
         Params:

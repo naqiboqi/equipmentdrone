@@ -50,6 +50,7 @@ and detailed playback embeds.
 """
 
 
+
 import aiohttp
 import discord
 import datetime
@@ -68,14 +69,18 @@ from .video_load import LYRICS_URL
 class VideoController(commands.Cog):
     """Commands to represent media controls for the bot's video player.
     
-    Params:
-        `bot` (commands.Bot): The bot instance.
-        `players` (dict[str, Player]): The video players associated with each server.
-        `player_ctx` (commands.Context): The most recently invoked context.
+    Attributes:
+    -----------
+        bot : commands.Bot
+            The bot instance.
+        players : dict[int, VideoPlayer]
+            The video players associated with each server.
+        player_ctx : commands.Context
+            The most recently invoked context.
     """
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.players: dict[str, VideoPlayer] = {}
+        self.players: dict[int, VideoPlayer] = {}
         self.player_ctx: commands.Context = None
 
     async def cleanup(self, guild: discord.Guild, ctx: commands.Context):
@@ -83,8 +88,10 @@ class VideoController(commands.Cog):
         
         Params:
         -------
-            `guild` (discord.Guild): The guild the command was invoked in.
-            `ctx` (commands.Context): The current `context` associated with a command.
+            guild : discord.Guild
+                The guild the command was invoked in.
+            ctx : commands.Context
+                The current context associated with a command.
             """
         if ctx is None:
             ctx = self.player_ctx
@@ -109,7 +116,8 @@ class VideoController(commands.Cog):
         
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command.
+            ctx : commands.Context
+                The current context associated with a command.
         """
         try:
             player = self.players[ctx.guild.id]
@@ -128,11 +136,13 @@ class VideoController(commands.Cog):
         
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command.
+            ctx : commands.Context
+                The current context associated with a command.
         """
         if ctx.author.voice:
             channel = ctx.message.author.voice.channel
-            return await channel.connect()
+            await channel.connect()
+            await ctx.send(f"Connected to voice channel {channel.name}", delete_after=10)
 
         await ctx.send("You must be in a voice channel!")
 
@@ -144,8 +154,10 @@ class VideoController(commands.Cog):
         
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command.
-            `video_search` (str): The title to search for, or a direct link to a video or playlist.
+            ctx : commands.Context
+                The current context associated with a command.
+            video_search : str
+                The video title to search for, or a direct link to a video or playlist.
         """
         vc = ctx.voice_client
         if not vc:
@@ -185,9 +197,12 @@ class VideoController(commands.Cog):
         
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command.
-            `player` (Player): The `Player` for the guild that the command was invoked from.
-            `playlist_url` (str): The url for the `Playlist` to pull sources from.
+            ctx : commands.Context
+                The current context associated with a command.
+            player : VideoPlayer 
+                The player for the guild that the command was invoked from.
+            playlist_url : str
+                The url for the `Playlist` to pull sources from.
         """
         playlist = pytube.Playlist(playlist_url)
         sources = await Video.get_sources(
@@ -210,10 +225,14 @@ class VideoController(commands.Cog):
         Adds a single video to the end of the queue.
         
         Params:
-            `ctx` (commands.Context): The current `context` associated with a command.
-            `player` (Player): The `Player` for the guild that the command was invoked from.
-            `video_search`: The title to search for.
-            `seek_time`: The time to start the video at.
+            ctx : commands.Context
+                The current context associated with a command.
+            player : VideoPlayer 
+                The player for the guild that the command was invoked from.
+            video_search : str
+                The title to search for.
+            seek_time : float
+                The time to start the video at.
         """
         source = await Video.get_source(
             ctx=ctx, search=video_search, 
@@ -230,7 +249,8 @@ class VideoController(commands.Cog):
         
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command.
+            ctx : commands.Context
+                The current context associated with a command.
         """
         vc = ctx.voice_client
         player = self.get_player(ctx)
@@ -242,7 +262,7 @@ class VideoController(commands.Cog):
 
         if player.now_playing_embed:
             await player.now_playing_embed.delete()
-            now_playing_embed = await player.current.display()
+            now_playing_embed = await player.current.get_video_details()
             player.now_playing_embed = await ctx.send(embed=now_playing_embed)
 
     @commands.hybrid_command(name='pause')
@@ -250,7 +270,9 @@ class VideoController(commands.Cog):
         """Pauses or unpauses the current video.
         
         Params:
-            `ctx` (commands.Context): The current `context` associated with a command.
+        -------
+            ctx : commands.Context
+                The current context associated with a command.
         """
         vc = ctx.voice_client
         player = self.get_player(ctx)
@@ -281,8 +303,10 @@ class VideoController(commands.Cog):
         
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command.
-            `video_search` (str|None): The title whose lyrics to search for.
+            ctx : commands.Context
+                The current context associated with a command.
+            video_search : str
+                The title whose lyrics to search for.
         """
         vc = ctx.voice_client
 
@@ -291,12 +315,10 @@ class VideoController(commands.Cog):
                 "I am not currently playing anything!", delete_after=10)
 
         video_search = video_search or vc.source.title
-
         async with ctx.typing():
             try:
                 async with aiohttp.request(
                     "GET", LYRICS_URL + video_search, headers={}) as response:
-                    # Ensure that the response to the GET request is valid.
                     if (not 200 <= response.status <= 299
                     or response.content_type != "application/json"):
                         return await ctx.send("No lyrics found.")
@@ -330,7 +352,8 @@ class VideoController(commands.Cog):
         """Displays the next 10 videos in the queue within an embed.
         
         Params:
-            `ctx` (commands.Context): The current `context` associated with a command.
+            ctx : commands.Context
+                The current context associated with a command.
         """
         vc = ctx.voice_client
         if not vc or not vc.is_connected():
@@ -360,8 +383,10 @@ class VideoController(commands.Cog):
         
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command.
-            `spot` (int): The index of the video to remove.
+            ctx : commands.Context
+                The current context associated with a command.
+            spot : int
+                The index of the video to remove.
         """
         player = self.get_player(ctx)
         videos_queue = player.queue._queue
@@ -382,7 +407,8 @@ class VideoController(commands.Cog):
         
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command.
+            ctx : commands.Context
+                The current context associated with a command.
         """
         player = self.get_player(ctx)
         videos = player.queue._queue
@@ -395,7 +421,8 @@ class VideoController(commands.Cog):
         
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command.
+            ctx : commands.Context
+                The current context associated with a command.
         """
         vc = ctx.voice_client
         if not vc or not vc.is_connected():
@@ -413,7 +440,8 @@ class VideoController(commands.Cog):
         
         Params:
         -------
-            `ctx` (commands.Context): The current `context` associated with a command.
+            ctx : commands.Context
+                The current context associated with a command.
         """
         vc = ctx.voice_client
         if not vc or not vc.is_connected():
@@ -428,8 +456,10 @@ class VideoController(commands.Cog):
         """Sets the player volume to the given value.
         
         Params:
-            `ctx` (commands.Context): The current `context` associated with a command.
-            `vol` (int): The new volume level, must be between `1` and `100`.
+            ctx : commands.Context
+                The current context associated with a command.
+            vol : int
+                The new volume level, must be between `1` and `100`.
         """
         vc = ctx.voice_client
         if not vc or not vc.is_connected():
