@@ -15,9 +15,10 @@ Usage:
 """
 
 
+
 import discord
 
-from .board import Board
+from .board import DefenseBoard
 from .ship import Ship
 
 
@@ -32,14 +33,14 @@ class BoardView(discord.ui.View):
 
     Attributes:
     ----------
-        board : Board
+        placement_board : DefenseBoard
             The board to interact with.
         current : int
             The current ship value to move.
         fleet : list[Ship] 
             The ships to choose between.
     """
-    def __init__(self, board: Board, fleet: list[Ship], *, timeout=180):
+    def __init__(self, board: DefenseBoard, fleet: list[Ship], *, timeout=600):
         super().__init__(timeout=timeout)
         self.placement_board = board
         self.current: int = None
@@ -78,15 +79,28 @@ class BoardView(discord.ui.View):
         If a ship was selected and the user is now selecting a new ship, confirms
         the placement of the previous ship. 
         """
-        if self.current:        
+        if self.current is not None:        
             ship = self.fleet[self.current]
-
-            if not ship.final_placed:
-                self.placement_board.confirm_ship(ship)
+            self.placement_board.deselect_ship(ship)
+            print("deselected")
 
         self.current = int(select.values[0]) - 1
         ship = self.fleet[self.current]
         await self.select_ship_(interaction, ship)
+
+    async def move_ship_(self, interaction: discord.Interaction, dy=0, dx=0):
+        if self.current is None:
+            return await interaction.response.send_message("Select a ship first!", delete_after=5)
+
+        ship = self.fleet[self.current]
+        if self.placement_board.is_valid_move_loc(ship, dy=dy, dx=dx):
+            self.placement_board.move_ship(ship, dy=dy, dx=dx)
+            self.placement_board.redraw(self.fleet)
+            
+            embed = self.placement_board.get_ship_placement_embed(ship)
+            await interaction.response.edit_message(embed=embed)
+        else:
+            await interaction.response.defer()
 
     @discord.ui.button(label="⬅️", style=discord.ButtonStyle.blurple)
     async def move_ship_left_(  
@@ -94,18 +108,7 @@ class BoardView(discord.ui.View):
         interaction: discord.Interaction,
         button: discord.ui.Button):
         """Moves the currently selected ship one step to the left if the move is valid."""
-        if self.current is None:
-            return await interaction.response.send_message("Select a ship first!", delete_after=5)
-        
-        ship = self.fleet[self.current]
-        dx = -1
-
-        if self.placement_board.is_valid_move_loc(ship, dx=dx):
-            self.placement_board.move_ship(ship, dx=dx)
-            embed = self.placement_board.get_ship_placement_embed(ship)
-            await interaction.response.edit_message(embed=embed)
-        else:
-            await interaction.response.defer()
+        await self.move_ship_(interaction, dx=-1)
 
     @discord.ui.button(label="⬆️", style=discord.ButtonStyle.blurple)
     async def move_ship_up_(
@@ -113,18 +116,7 @@ class BoardView(discord.ui.View):
         interaction: discord.Interaction,
         button: discord.ui.Button):
         """Moves the currently selected ship one step up if the move is valid."""
-        if self.current is None:
-            return await interaction.response.send_message("Select a ship first!", delete_after=5)
-        
-        ship = self.fleet[self.current]
-        dy = -1
-
-        if self.placement_board.is_valid_move_loc(ship, dy=dy):
-            self.placement_board.move_ship(ship, dy=dy)
-            embed = self.placement_board.get_ship_placement_embed(ship)
-            await interaction.response.edit_message(embed=embed)
-        else:
-            await interaction.response.defer()
+        await self.move_ship_(interaction, dy=-1)
             
     @discord.ui.button(label="➡️", style=discord.ButtonStyle.blurple)
     async def move_ship_right_(
@@ -132,18 +124,7 @@ class BoardView(discord.ui.View):
         interaction: discord.Interaction,
         button: discord.ui.Button):
         """Moves the currently selected ship one step to the right if the move is valid."""
-        if self.current is None:
-            return await interaction.response.send_message("Select a ship first!", delete_after=5)
-        
-        ship = self.fleet[self.current]
-        dx = 1
-
-        if self.placement_board.is_valid_move_loc(ship, dx=dx):
-            self.placement_board.move_ship(ship, dx=dx)
-            embed = self.placement_board.get_ship_placement_embed(ship)
-            await interaction.response.edit_message(embed=embed)
-        else:
-            await interaction.response.defer()
+        await self.move_ship_(interaction, dx=1)
 
     @discord.ui.button(label="⬇️", style=discord.ButtonStyle.blurple)
     async def move_ship_down_(
@@ -151,18 +132,7 @@ class BoardView(discord.ui.View):
         interaction: discord.Interaction,
         button: discord.ui.Button):
         """Moves the currently selected ship one step down if the move is valid."""
-        if self.current is None:
-            return await interaction.response.send_message("Select a ship first!", delete_after=5)
-        
-        ship = self.fleet[self.current]
-        dy = 1
-        
-        if self.placement_board.is_valid_move_loc(ship, dy=dy):
-            self.placement_board.move_ship(ship, dy=dy)
-            embed = self.placement_board.get_ship_placement_embed(ship)
-            await interaction.response.edit_message(embed=embed)
-        else:
-            await interaction.response.defer()
+        await self.move_ship_(interaction, dy=1)
 
     @discord.ui.button(label="✅", style=discord.ButtonStyle.blurple)
     async def confirm_ship_placement_(
@@ -177,14 +147,37 @@ class BoardView(discord.ui.View):
             return await interaction.response.send_message("Select a ship first!", delete_after=5)
         
         ship = self.fleet[self.current]
+        
+        conflicting_ship = self.placement_board.is_valid_confirm_loc(ship, self.fleet)
+        if conflicting_ship:
+            return await interaction.response.send_message(
+                f"The ships {ship.name} and {conflicting_ship.name} intersect at these locations: "
+                f"`{set(ship.locs) & set(conflicting_ship.locs)}`, please move one of the ships.",
+                delete_after=10)
+        
         self.placement_board.confirm_ship(ship)
         
-        self.current = next((i for i, ship in enumerate(self.fleet) if not ship.final_placed), None)
+        ## Get the next unconfirmed ship
+        self.current = next((i for i, ship in enumerate(self.fleet) if not ship.confirmed), None)
         if self.current is not None:
             ship = self.fleet[self.current]
             await self.select_ship_(interaction, ship)
         else:
-            await interaction.response.send_message("All ships have been placed!", delete_after=5)
+            await interaction.response.send_message("All ships have been placed!")
+
+    async def rotate_ship_(self, interaction: discord.Interaction, direction: str):
+        if self.current is None:
+            return await interaction.response.send_message("Select a ship first!", delete_after=5)
+
+        ship = self.fleet[self.current]
+        if self.placement_board.is_valid_rotation(ship, direction):
+            self.placement_board.rotate_ship(ship, direction)
+            self.placement_board.redraw(self.fleet)
+            
+            embed = self.placement_board.get_ship_placement_embed(ship)
+            await interaction.response.edit_message(embed=embed)
+        else:
+            await interaction.response.defer()
 
     @discord.ui.button(label="Vertical 🔄️", style=discord.ButtonStyle.blurple)
     async def rotate_ship_vertical_(
@@ -192,18 +185,7 @@ class BoardView(discord.ui.View):
         interaction: discord.Interaction,
         button: discord.ui.Button):
         """Rotates the currently selected ship to a vertical orientation if valid."""
-        if self.current is None:
-            return await interaction.response.send_message("Select a ship first!", delete_after=5)
-        
-        ship = self.fleet[self.current]
-        direction = "V"
-
-        if self.placement_board.is_valid_rotation(ship, direction=direction):
-            self.placement_board.rotate_ship(ship, direction=direction)
-            embed = self.placement_board.get_ship_placement_embed(ship)
-            await interaction.response.edit_message(embed=embed)
-        else:
-            await interaction.response.defer()
+        await self.rotate_ship_(interaction, direction="V")
 
     @discord.ui.button(label="🔄️ Horizontal", style=discord.ButtonStyle.blurple)
     async def rotate_ship_horizontal_(
@@ -211,15 +193,4 @@ class BoardView(discord.ui.View):
         interaction: discord.Interaction,
         button: discord.ui.Button):
         """Rotates the currently selected ship to a horizontal orientation if valid."""
-        if self.current is None:
-            return await interaction.response.send_message("Select a ship first!", delete_after=5)
-        
-        ship = self.fleet[self.current]
-        direction="H"
-
-        if self.placement_board.is_valid_rotation(ship, direction=direction):
-            self.placement_board.rotate_ship(ship, direction=direction)
-            embed = self.placement_board.get_ship_placement_embed(ship)
-            await interaction.response.edit_message(embed=embed)
-        else:
-            await interaction.response.defer()
+        await self.rotate_ship_(interaction, direction="H")
