@@ -69,6 +69,7 @@ class Board():
     def is_valid_loc_(self, ship: Ship, y: int, x: int, direction: str):
         """Returns whether or not the given location is a valid placement for a ship.
         
+        Is used for the initial random placement. 
         A location is valid if all locations occupied by the ship are only open water.
         
         Params:
@@ -94,9 +95,9 @@ class Board():
         return True
 
     def is_valid_move_loc(self, ship: Ship, dy: int=0, dx: int=0):
-        """Returns whether or not the given movement will result in a valid location for a ship.
+        """Returns whether or not the given movement will result be a location for a ship.
         
-        A location is valid if all locations occupied by the `ship` are only open water.
+        A location is valid if the ship is within bounds of the board.
         
         Params:
         -------
@@ -112,15 +113,13 @@ class Board():
             ny, nx = y + dy, x + dx
             if (not 0 <= ny < self.size) or (not 0 <= nx < self.size):
                 return False
-            if (self.grid[ny][nx] != OPEN and (ny, nx) not in ship.locs):
-                return False
 
         return True
 
     def is_valid_rotation(self, ship: Ship, direction: str):
         """Returns whether or not rotating the ship will result in valid placement.
         
-        A location is valid if all locations occupied by the ship are open water.
+        A location is valid if the ship is within bounds of the board.
         
         Params:
         -------
@@ -137,10 +136,36 @@ class Board():
             ny, nx = y + dy * i, x + dx * i
             if not (0 <= ny < self.size) or not (0 <= nx < self.size):
                 return False
-            if self.grid[ny][nx] != OPEN and (ny, nx) not in ship.locs:
-                return False
 
         return True
+
+    def is_valid_confirm_loc(self, ship: Ship, fleet: list[Ship]):
+        """Checks to make sure that the confirming ship does not intersect another ship.
+        
+        If there is an intersection, returns that ship, or `None` otherwise.
+        
+        Params:
+        -------
+            ship : Ship
+                The current ship to check.
+                
+            fleet: list[Ship]
+                The ships to check against.
+        """
+        # for loc in ship.locs:
+        #     y, x = loc
+        #     if (not 0 <= y < self.size) or (not 0 <= x < self.size):
+        #         return False
+        #     if (self.grid[y][x] != OPEN and (y, x) not in ship.locs):
+        #         return False
+
+        for other_ship in fleet:
+            if ship == other_ship:
+                continue
+            if set(ship.locs) & set(other_ship.locs):
+                return other_ship
+            
+        return None
 
     def __str__(self):
         """Returns a string representation of the board."""
@@ -175,7 +200,7 @@ class DefenseBoard(Board):
         self.random_place_ships([ship])
         ship.placed_before = True
 
-    def random_place_ships(self, fleet: list[Ship]):
+    def random_place_ships(self, fleet: list[Ship], bot_player: bool=False):
         """Attemps to randomly place each ship from a player's fleets onto the board.
         
         Ensures that no ships intersect and are within the bounds of the board.
@@ -183,18 +208,20 @@ class DefenseBoard(Board):
         Params:
         -------
             fleet : list[Ship]
-                The player's ships
+                The player's ships.
+            bot_player : bool
+                If the placing player is a bot or not.
         """
         for ship in fleet:
             placed = False
             while not placed:
-                x, y = random.randint(0, self.size - 1), random.randint(0, self.size - 1)
+                y, x = random.randint(0, self.size - 1), random.randint(0, self.size - 1)
                 direction = random.choice(["H", "V"])
                 if self.is_valid_loc_(ship, y, x, direction):
-                    self.place_ship_(ship, y, x, direction)
+                    self.place_ship_(ship, y, x, direction, bot_player)
                     placed = True
 
-    def place_ship_(self, ship: Ship, y: int, x: int, direction: str):
+    def place_ship_(self, ship: Ship, y: int, x: int, direction: str, bot_player):
         """Places a ship at a given location on the board.
         
         When placed, the `self.locs` of the ship are updated as well as the symbols
@@ -209,13 +236,15 @@ class DefenseBoard(Board):
             x : int
                 The x coordinate to place at.
             direction : str
-                The direction for the ship to face
+                The direction for the ship to face.
+            bot_player : bool
+                If the placing player is a bot or not.
         """
         dy, dx = (0, 1) if direction == "H" else (1, 0)
         for i in range(ship.size):
             ny, nx = y + dy * i, x + dx * i
             ship.locs.append((ny, nx))
-            self.grid[ny][nx] = SHIP_NOT_CONFIRMED
+            self.grid[ny][nx] = CONFIRMED_SHIP if bot_player else SHIP_NOT_CONFIRMED
 
     def move_ship(self, ship: Ship, dy: int=0, dx: int=0):
         """Moves the ship to a new location given a change in y or x coordinate.
@@ -229,15 +258,10 @@ class DefenseBoard(Board):
             dx : int
                 The change x coordinate to move the ship.
         """
-        for y, x in ship.locs:
-            self.grid[y][x] = OPEN
-
         for i in range(len(ship.locs)):
             y, x = ship.locs[i]
             ny, nx = y + dy, x + dx
-
             ship.locs[i] = (ny, nx)
-            self.grid[ny][nx] = CURRENT_SHIP
 
     def rotate_ship(self, ship: Ship, direction: str):
         """Rotates the ship in the given direction.
@@ -249,19 +273,26 @@ class DefenseBoard(Board):
             direction : str
                 The direction for the ship to face.
         """
-        for y, x in ship.locs:
-            self.grid[y][x] = OPEN
-
         rotate_point = ship.locs[0]
         y, x = rotate_point
 
         dy, dx = (0, 1) if direction == "H" else (1, 0)
         for i in range(ship.size): 
             ny, nx = y + dy * i, x + dx * i
-
             ship.locs[i] = (ny, nx)
-            self.grid[ny][nx] = CURRENT_SHIP
             
+    def redraw(self, fleet: list[Ship]):
+        self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
+
+        for ship in fleet:
+            for y, x in ship.locs:
+                if ship.current_ship:
+                    self.grid[y][x] = CURRENT_SHIP
+                elif ship.confirmed:
+                    self.grid[y][x] = CONFIRMED_SHIP
+                elif ship.placed_before:
+                    self.grid[y][x] = SHIP_NOT_CONFIRMED
+
     def confirm_ship(self, ship: Ship):
         """Confirms the placement of the given ship.
         
@@ -272,9 +303,10 @@ class DefenseBoard(Board):
         """
         for y, x in ship.locs:
             self.grid[y][x] = CONFIRMED_SHIP
-            
-        ship.final_placed = True
-        
+
+        ship.current_ship = False
+        ship.confirmed = True
+
     def select_ship(self, ship: Ship):
         """Selects and highlights the given ship so the player can choose its location.
         
@@ -285,9 +317,10 @@ class DefenseBoard(Board):
         """
         for y, x in ship.locs:
             self.grid[y][x] = CURRENT_SHIP
-            
-        ship.final_placed = False
-            
+
+        ship.current_ship = True
+        ship.confirmed = False
+
     def deselect_ship(self, ship: Ship):
         """Deselects the current ship for placement.
         
@@ -298,6 +331,8 @@ class DefenseBoard(Board):
         """
         for y, x in ship.locs:
             self.grid[y][x] = SHIP_NOT_CONFIRMED
+
+        ship.current_ship = False
 
     def get_ship_placement_embed(self, current_ship: Optional[Ship]=None):
         """Returns an embed showing the currently selected ship and
@@ -319,6 +354,15 @@ class DefenseBoard(Board):
             value=f"{current_ship if current_ship else '....'}"
         )
 
+        embed.add_field(
+            name="Legend",
+            value="""
+            Your current ship is marked as 🟩
+            Unconfirmed ships are marked as 🟥
+            Confirmed ships are marked as ⏹️
+            """
+        )
+
         embed.set_footer(
             text="Use the buttons to move the current ship, then click ✅ when you are done!")
 
@@ -334,12 +378,11 @@ class DefenseBoard(Board):
 
         embed.add_field(
             name="These are your ships, guard them with your life!",
-            value=
-            """
+            value="""
             Healthy ships have their sections marked as ⏹️
             Damaged ships have their sections marked as 🟥
             """)
-        
+
         return embed
 
 

@@ -58,6 +58,9 @@ class Game:
         self.attack_messasge: discord.Message = None
         self.turn_message: discord.Message = None
         self.log_message: discord.Message = None
+        
+        self.bot_attack_message: discord.Message = None
+        self.bot_defense_message: discord.Message = None
 
     def add_event_to_log(
         self, 
@@ -124,8 +127,11 @@ class Game:
             await player_2.send_board_states()
         else:
             await ctx.send("I am (very intelligently) placing my ships 🧠", delete_after=15)
-            player_2.random_place_ships()
-            await sleep(15)
+            player_2.random_place_ships(bot_player=True)
+            await sleep(10)
+        
+        self.bot_attack_message = await self.player_1.member.send(embed=self.player_2.attack_board.get_embed())
+        self.bot_defense_message = await self.player_1.member.send(embed=self.player_2.defense_board.get_embed())
 
         await ctx.send(
             f"Game started between {self.player_1.member.mention} and "
@@ -167,12 +173,16 @@ class Game:
         if re.match(pattern, move):
             # Add 1 from y and x coords for 0-indexing
             y, x = char_to_nums[move[0].upper()], int(move[1:]) - 1
-            target = player.tracking_board.grid[y][x]
+            target = player.attack_board.grid[y][x]
 
             if not target in [HIT, MISS]:
                 return y, x
 
-        self.add_event_to_log([self.attacker, self.defender], "invalid_attack", [(y, x)])
+        self.add_event_to_log(
+            [self.attacker, self.defender], 
+            "invalid_attack", 
+            [(y or "N/A", x or "N/A")])
+        
         return None
     
     async def bot_turn(self):
@@ -221,11 +231,11 @@ class Game:
                 self.add_event_to_log([attacker, defender], "sank", ship.locs)
                 sunk = True
 
-            attacker.tracking_board.grid[y][x] = HIT
+            attacker.attack_board.grid[y][x] = HIT
             defender.defense_board.grid[y][x] = HIT
         else:
             self.add_event_to_log([attacker, defender], "attack_miss", [(y, x)])
-            attacker.tracking_board.grid[y][x] = MISS
+            attacker.attack_board.grid[y][x] = MISS
             
         return hit, sunk
     
@@ -308,8 +318,13 @@ class Game:
         """
         await self.player_1.update_board_states()
 
-        if not self.bot_player:
-            await self.player_2.update_board_states()
+        #if not self.bot_player:
+        #    await self.player_2.update_board_states()
+        
+        attack_embed = self.player_2.attack_board.get_embed()
+        defense_embed = self.player_2.defense_board.get_embed()
+        self.bot_attack_message = await self.bot_attack_message.edit(embed=attack_embed)
+        self.bot_defense_message = await self.bot_defense_message.edit(embed=defense_embed)
 
         if self.end_turn():
             return await self.end_game_(ctx)

@@ -43,7 +43,9 @@ class Ship():
         self.ship_class: str = None
         self.health = [True] * size
         self.locs: list[tuple[int, int]] = []
-        self.final_placed = False
+        
+        self.current_ship = False
+        self.confirmed = False
         self.placed_before = False
 
     def take_damage_at(self, y: int, x: int):

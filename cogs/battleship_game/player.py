@@ -78,7 +78,7 @@ class Player():
     """
     def __init__(self, member: discord.Member):
         self.defense_board = DefenseBoard()
-        self.tracking_board = AttackBoard()
+        self.attack_board = AttackBoard()
         self.fleet = [Ship(size) for size in [2, 3, 3, 4, 5]]
         self.member = member
     
@@ -114,26 +114,31 @@ class Player():
                 f"please check you DM settings.")
         
         # Don't exit until all ships are placed
-        while not (all(ship.final_placed for ship in self.fleet)):
+        while not (all(ship.confirmed for ship in self.fleet)):
             await sleep(5)
 
         await self.placement_message.delete()
 
-    def random_place_ships(self):
-        """Randomly place ships on the player's board."""
-        self.defense_board.random_place_ships(self.fleet)
+    def random_place_ships(self, bot_player: bool=False):
+        """Randomly place ships on the player's board.
+        
+        Params:
+        -------
+        bot_player : bool
+            If the placing player is a bot or not."""
+        self.defense_board.random_place_ships(self.fleet, bot_player)
 
     async def update_board_states(self):
         """Updates the boards in the player's direct messages."""
         fleet_embed = self.defense_board.get_embed()
-        tracking_embed = self.tracking_board.get_embed()
+        tracking_embed = self.attack_board.get_embed()
         self.defense_board_message = await self.defense_board_message.edit(embed=fleet_embed)
         self.attack_board_message = await self.attack_board_message.edit(embed=tracking_embed)
         
     async def send_board_states(self):
         """Sends the player's boards as a direct message."""
         fleet_embed = self.defense_board.get_embed()
-        tracking_embed = self.tracking_board.get_embed()
+        tracking_embed = self.attack_board.get_embed()
         self.defense_board_message = await self.member.send(embed=fleet_embed)
         self.attack_board_message = await self.member.send(embed=tracking_embed)
 
