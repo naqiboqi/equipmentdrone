@@ -117,6 +117,7 @@ class Player():
         while not (all(ship.confirmed for ship in self.fleet)):
             await sleep(5)
 
+        await sleep(2)
         await self.placement_message.delete()
 
     def random_place_ships(self, bot_player: bool=False):

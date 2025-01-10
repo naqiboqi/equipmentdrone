@@ -46,9 +46,13 @@ from .ship import Ship
 
 
 OPEN = "🟦"
+"""Represents open water."""
 CURRENT_SHIP = "🟩"
+"""Represents the currently selected ship."""
 CONFIRMED_SHIP = "⏹️"
+"""Represents a ship with finalized placement."""
 SHIP_NOT_CONFIRMED = "🟥"
+"""Represents a ship that was placed, but not finalized."""
 
 
 class Board():
@@ -57,13 +61,13 @@ class Board():
     Attributes:
     ----------
         `size` : int
-            The size of the board (both width and height).
+            The size of the board (in both width and height).
         `grid` : list[list[str]]
             A 2D grid representing the board. Each cell contains a symbol to indicate 
             its state (e.g., open water, a ship, or a hit/miss).
     """
-    def __init__(self):
-        self.size = 10
+    def __init__(self, size: int=10):
+        self.size = size
         self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
 
     def is_valid_loc_(self, ship: Ship, y: int, x: int, direction: str):
@@ -152,13 +156,6 @@ class Board():
             fleet: list[Ship]
                 The ships to check against.
         """
-        # for loc in ship.locs:
-        #     y, x = loc
-        #     if (not 0 <= y < self.size) or (not 0 <= x < self.size):
-        #         return False
-        #     if (self.grid[y][x] != OPEN and (y, x) not in ship.locs):
-        #         return False
-
         for other_ship in fleet:
             if ship == other_ship:
                 continue
@@ -185,7 +182,7 @@ class DefenseBoard(Board):
     representations of the fleet for the player while the game is in progress.
     """
     def __init__(self):
-        super().__init__()
+        super().__init__(size=10)
 
     def first_placement(self, ship: Ship):
         """Places the ship on a random valid location on the board.
@@ -212,14 +209,18 @@ class DefenseBoard(Board):
             bot_player : bool
                 If the placing player is a bot or not.
         """
+        self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
+        
         for ship in fleet:
-            placed = False
-            while not placed:
+            ship.locs = []
+            ship.placed_before = False
+            
+            while not ship.placed_before and not ship.confirmed:
                 y, x = random.randint(0, self.size - 1), random.randint(0, self.size - 1)
                 direction = random.choice(["H", "V"])
                 if self.is_valid_loc_(ship, y, x, direction):
                     self.place_ship_(ship, y, x, direction, bot_player)
-                    placed = True
+                    ship.placed_before = True
 
     def place_ship_(self, ship: Ship, y: int, x: int, direction: str, bot_player):
         """Places a ship at a given location on the board.
@@ -280,7 +281,7 @@ class DefenseBoard(Board):
         for i in range(ship.size): 
             ny, nx = y + dy * i, x + dx * i
             ship.locs[i] = (ny, nx)
-            
+
     def redraw(self, fleet: list[Ship]):
         self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
 
@@ -354,15 +355,6 @@ class DefenseBoard(Board):
             value=f"{current_ship if current_ship else '....'}"
         )
 
-        embed.add_field(
-            name="Legend",
-            value="""
-            Your current ship is marked as 🟩
-            Unconfirmed ships are marked as 🟥
-            Confirmed ships are marked as ⏹️
-            """
-        )
-
         embed.set_footer(
             text="Use the buttons to move the current ship, then click ✅ when you are done!")
 
@@ -371,16 +363,17 @@ class DefenseBoard(Board):
     def get_embed(self):
         """Returns an embed that shows the player's finalized ship placements on the board."""
         embed = discord.Embed(
-            title="Your fleet: ",
+            title="These are your ships. Be sure to guard them with your life!",
             description=f"```{self.__str__()}```",
             color=discord.Color.dark_magenta()
         )
 
         embed.add_field(
-            name="These are your ships, guard them with your life!",
+            name="For you to keep track....",
             value="""
-            Healthy ships have their sections marked as ⏹️
-            Damaged ships have their sections marked as 🟥
+            ⏹️: Healthy ship sections
+            
+            🟥: Damaged ship sections
             """)
 
         return embed
@@ -396,7 +389,7 @@ class AttackBoard(Board):
     to visualize the progress of the game.
     """
     def __init__(self):
-        super().__init__()
+        super().__init__(size=10)
 
     def get_embed(self):
         """Returns an embed that shows the player's attacking board that keeps track of their
@@ -409,10 +402,11 @@ class AttackBoard(Board):
         )
 
         embed.add_field(
-            name="Each attack on your enemy can have one of two results. You may only attack a position once!",
+            name="For you to keep track....",
             value="""
-            Your hits on enemy ships are marked with 🟥
-            Your misses are marked with ⬜
+            🟥: Hits on enemy ships
+            
+            ⬜: Misses on enemy ships
             """)
 
         return embed

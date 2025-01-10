@@ -12,8 +12,11 @@ from ..utils import EventLog
 
 
 HIT = "🟥"
+"""Represents a successful attack."""
 MISS = "⬜"
+"""Represents a missed attack."""
 SHIP = "⏹️"
+"""Represents a ship segment."""
 
 
 
@@ -93,7 +96,7 @@ class Game:
         player_2 = self.player_2
 
         embed = discord.Embed(
-            title="Select a country to carry to lead to victory 🌎",
+            title="Select a country to lead into battle 🌎",
             color=discord.Color.blue()
         )
 
@@ -318,8 +321,8 @@ class Game:
         """
         await self.player_1.update_board_states()
 
-        #if not self.bot_player:
-        #    await self.player_2.update_board_states()
+        if not self.bot_player:
+            await self.player_2.update_board_states()
         
         attack_embed = self.player_2.attack_board.get_embed()
         defense_embed = self.player_2.defense_board.get_embed()

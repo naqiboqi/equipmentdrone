@@ -63,10 +63,10 @@ class BoardView(discord.ui.View):
         self.placement_board.select_ship(ship)
         embed = self.placement_board.get_ship_placement_embed(ship)
         await interaction.response.edit_message(embed=embed)
-        
+    
     @discord.ui.select(
         placeholder="Select a ship to place",
-        options=[discord.SelectOption(label=f"Ship {i}", value=str(i)) for i in range(1, 6)])
+        options=[discord.SelectOption(label=f"Ship {i}", value=str(i)) for i in range(1, 6)], row=0)
     async def select_ship_option_(
         self,
         interaction: discord.Interaction,
@@ -82,7 +82,6 @@ class BoardView(discord.ui.View):
         if self.current is not None:        
             ship = self.fleet[self.current]
             self.placement_board.deselect_ship(ship)
-            print("deselected")
 
         self.current = int(select.values[0]) - 1
         ship = self.fleet[self.current]
@@ -96,13 +95,13 @@ class BoardView(discord.ui.View):
         if self.placement_board.is_valid_move_loc(ship, dy=dy, dx=dx):
             self.placement_board.move_ship(ship, dy=dy, dx=dx)
             self.placement_board.redraw(self.fleet)
-            
+
             embed = self.placement_board.get_ship_placement_embed(ship)
             await interaction.response.edit_message(embed=embed)
         else:
             await interaction.response.defer()
 
-    @discord.ui.button(label="⬅️", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="⬅️", style=discord.ButtonStyle.blurple, row=1)
     async def move_ship_left_(  
         self,
         interaction: discord.Interaction,
@@ -110,7 +109,7 @@ class BoardView(discord.ui.View):
         """Moves the currently selected ship one step to the left if the move is valid."""
         await self.move_ship_(interaction, dx=-1)
 
-    @discord.ui.button(label="⬆️", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="⬆️", style=discord.ButtonStyle.blurple, row=1)
     async def move_ship_up_(
         self,
         interaction: discord.Interaction,
@@ -118,7 +117,7 @@ class BoardView(discord.ui.View):
         """Moves the currently selected ship one step up if the move is valid."""
         await self.move_ship_(interaction, dy=-1)
             
-    @discord.ui.button(label="➡️", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="➡️", style=discord.ButtonStyle.blurple, row=1)
     async def move_ship_right_(
         self,
         interaction: discord.Interaction,
@@ -126,44 +125,13 @@ class BoardView(discord.ui.View):
         """Moves the currently selected ship one step to the right if the move is valid."""
         await self.move_ship_(interaction, dx=1)
 
-    @discord.ui.button(label="⬇️", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="⬇️", style=discord.ButtonStyle.blurple, row=1)
     async def move_ship_down_(
         self,
         interaction: discord.Interaction,
         button: discord.ui.Button):
         """Moves the currently selected ship one step down if the move is valid."""
         await self.move_ship_(interaction, dy=1)
-
-    @discord.ui.button(label="✅", style=discord.ButtonStyle.blurple)
-    async def confirm_ship_placement_(
-        self,
-        interaction: discord.Interaction,
-        button: discord.ui.Button):
-        """Confirms the placement of the currently selected ship on the board.
-        
-        Moves to the next ship in the fleet that is not placed, unless all ships have been placed.
-        """
-        if self.current is None:
-            return await interaction.response.send_message("Select a ship first!", delete_after=5)
-        
-        ship = self.fleet[self.current]
-        
-        conflicting_ship = self.placement_board.is_valid_confirm_loc(ship, self.fleet)
-        if conflicting_ship:
-            return await interaction.response.send_message(
-                f"The ships {ship.name} and {conflicting_ship.name} intersect at these locations: "
-                f"`{set(ship.locs) & set(conflicting_ship.locs)}`, please move one of the ships.",
-                delete_after=10)
-        
-        self.placement_board.confirm_ship(ship)
-        
-        ## Get the next unconfirmed ship
-        self.current = next((i for i, ship in enumerate(self.fleet) if not ship.confirmed), None)
-        if self.current is not None:
-            ship = self.fleet[self.current]
-            await self.select_ship_(interaction, ship)
-        else:
-            await interaction.response.send_message("All ships have been placed!")
 
     async def rotate_ship_(self, interaction: discord.Interaction, direction: str):
         if self.current is None:
@@ -179,7 +147,7 @@ class BoardView(discord.ui.View):
         else:
             await interaction.response.defer()
 
-    @discord.ui.button(label="Vertical 🔄️", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="Vertical 🔄️", style=discord.ButtonStyle.blurple, row=2)
     async def rotate_ship_vertical_(
         self,
         interaction: discord.Interaction,
@@ -187,10 +155,87 @@ class BoardView(discord.ui.View):
         """Rotates the currently selected ship to a vertical orientation if valid."""
         await self.rotate_ship_(interaction, direction="V")
 
-    @discord.ui.button(label="🔄️ Horizontal", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="🔄️ Horizontal", style=discord.ButtonStyle.blurple, row=2)
     async def rotate_ship_horizontal_(
         self,
         interaction: discord.Interaction,
         button: discord.ui.Button):
         """Rotates the currently selected ship to a horizontal orientation if valid."""
         await self.rotate_ship_(interaction, direction="H")
+
+    @discord.ui.button(label="Randomize❓", style=discord.ButtonStyle.blurple, row=2)
+    async def randomize_placements_(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button):
+        """
+        Randomly places all ships on the board, marking them as placed.
+        
+        Any ships whose placement was confirmed is skipped. The user must manually
+        confirm the remaining ships.
+        """
+        self.placement_board.random_place_ships(self.fleet)
+        embed = self.placement_board.get_ship_placement_embed()
+        await interaction.response.edit_message(embed=embed)
+
+    async def check_ship_conflict_(self, interaction: discord.Interaction, ship: Ship):
+        """Returns whether or not any ship in the fleet shares a location with another ship."""
+        conflicting_ship = self.placement_board.is_valid_confirm_loc(ship, self.fleet)
+        if conflicting_ship:
+            await interaction.response.send_message(
+                f"The ships {ship.name} and {conflicting_ship.name} intersect at these locations: "
+                f"`{set(ship.locs) & set(conflicting_ship.locs)}`, please move one of the ships.",
+                delete_after=10)
+
+            return True
+
+        return False
+
+    @discord.ui.button(label="✅", style=discord.ButtonStyle.blurple, row=3)
+    async def confirm_ship_placement_(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button):
+        """Confirms the placement of the currently selected ship, if it's location is valid.
+        
+        Selects the next ship in the fleet that is not confirmed.
+        """
+        if self.current is None:
+            return await interaction.response.send_message("Select a ship first!", delete_after=5)
+        
+        ship = self.fleet[self.current]
+        if await self.check_ship_conflict_(interaction, ship):
+            return
+
+        self.placement_board.confirm_ship(ship)
+        ## Get the next unconfirmed ship
+        self.current = next((i for i, ship in enumerate(self.fleet) if not ship.confirmed), None)
+        if self.current is not None:
+            ship = self.fleet[self.current]
+            await self.select_ship_(interaction, ship)
+        else:
+            embed = await self.placement_board.get_ship_placement_embed()
+            await interaction.response.edit_message(embed=embed)
+            await interaction.response.send_message("All ships have been placed!")
+
+    @discord.ui.button(label="Confirm All ✅", style=discord.ButtonStyle.blurple, row=3)
+    async def confirm_all_(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button):
+        """
+        Confirms the placement of all ships with a valid placement on the board.
+        
+        All ships must have been placed on the board prior to confirmation.
+        """
+
+        if not all(ship.placed_before for ship in self.fleet):
+            return await interaction.response.send_message(
+                "Place all of your ships before confirming!", delete_after=10)
+
+        for ship in self.fleet:
+            if not await self.check_ship_conflict_(interaction, ship):
+                self.placement_board.confirm_ship(ship)
+
+        embed = self.placement_board.get_ship_placement_embed()
+        await interaction.response.edit_message(embed=embed)
