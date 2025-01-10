@@ -98,12 +98,11 @@ class CountryView(discord.ui.View):
         interaction: discord.Interaction,
         select: discord.ui.Select):
 
-        member = interaction.user
         country_names = list(SHIP_NAMES.keys())
 
-        if self.player_1.member == member:
+        if self.player_1.member == interaction.user:
             self.player_1.country = country_names[int(select.values[0])]
-        elif self.player_2.member == member:
+        elif self.player_2.member == interaction.user:
             self.player_1.country = country_names[int(select.values[0])]
         else:
             return await interaction.response.defer()
