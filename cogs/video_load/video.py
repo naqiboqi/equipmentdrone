@@ -71,9 +71,16 @@ YTDL_FORMATS = {
     'default_search': 'auto',
     'source_address': '0.0.0.0'
 }
+"""
+Configuration settings for the `youtube_dl` (YTDL) instance, specifying various options for downloading 
+audio and video content from online sources.
 
+The settings define how the downloaded files should be named, which format should be chosen for audio, 
+and other preferences related to error handling, logging, and connection behavior.
+"""
 
 ytdl = YoutubeDL(YTDL_FORMATS)
+
 
 
 async def get_ffmpeg_options(seek_time: float = 0.00) -> dict:
@@ -127,17 +134,16 @@ class Video(discord.PCMVolumeTransformer):
         self,
         source: discord.FFmpegPCMAudio,
         *,
-        data: dict[str, str | int],
+        data: dict[str, str|int],
         requester: discord.member.Member,
-        duration: int
-    ) -> None:
+        duration: int):
         super().__init__(source)
         self.duration: int = duration
         self.requester: discord.member.Member = requester
         self.title: str = data.get('title')
         self.web_url: str = data.get('webpage_url')
         self.video_id: str = self.web_url.split("=", 1)[1]
-        self.thumbnail: str = F"https://i1.ytimg.com/vi/{self.video_id}/hqdefault.jpg"
+        self.thumbnail: str = f"https://i1.ytimg.com/vi/{self.video_id}/hqdefault.jpg"
 
         self.elapsed_time = 0.00
         self.seeked_time = 0.00
