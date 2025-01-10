@@ -1,87 +1,87 @@
 {
     "United States": {
-        "Carriers": ["USS Enterprise", "USS Nimitz"],
-        "Battleships": ["USS Iowa", "USS Missouri"],
-        "Dreadnoughts": ["USS Nevada", "USS Pennsylvania"],
-        "Destroyers": ["USS Fletcher", "USS Arleigh Burke"],
-        "Submarines": ["USS Nautilus", "USS Seawolf"]
+        "Carrier": ["USS Enterprise", "USS Nimitz"],
+        "Battleship": ["USS Iowa", "USS Missouri"],
+        "Dreadnought": ["USS Nevada", "USS Pennsylvania"],
+        "Destroyer": ["USS Fletcher", "USS Arleigh Burke"],
+        "Submarine": ["USS Nautilus", "USS Seawolf"]
     },
     "Empire of Great Britain and Northern Ireland": {
-        "Carriers": ["HMS Ark Royal", "HMS Illustrious"],
-        "Battleships": ["HMS Vanguard", "HMS Royal Oak"],
-        "Dreadnoughts": ["HMS Dreadnought", "HMS Iron Duke"],
-        "Destroyers": ["HMS Churchill", "HMS Edinburgh"],
-        "Submarines": ["HMS Courageous", "HMS Resolution"]
+        "Carrier": ["HMS Ark Royal", "HMS Illustrious"],
+        "Battleship": ["HMS Vanguard", "HMS Royal Oak"],
+        "Dreadnought": ["HMS Dreadnought", "HMS Iron Duke"],
+        "Destroyer": ["HMS Churchill", "HMS Edinburgh"],
+        "Submarine": ["HMS Courageous", "HMS Resolution"]
     },
     "Imperial Japan": {
-        "Carriers": ["IJN Akagi", "IJN Enterprise"],
-        "Battleships": ["IJN Yamato", "IJN Musashi"],
-        "Dreadnoughts": ["IJN Kongo", "IJN Fuso"],
-        "Destroyers": ["IJN Shimakaze", "IJN Akatsuki"],
-        "Submarines": ["IJN I-400", "IJN I-19"]
+        "Carrier": ["IJN Akagi", "IJN Enterprise"],
+        "Battleship": ["IJN Yamato", "IJN Musashi"],
+        "Dreadnought": ["IJN Kongo", "IJN Fuso"],
+        "Destroyer": ["IJN Shimakaze", "IJN Akatsuki"],
+        "Submarine": ["IJN I-400", "IJN I-19"]
     },
     "Italian Empire": {
-        "Carriers": ["SS Roma", "SS Aquila"],
-        "Battleships": ["SS Vittorio Veneto", "SS Littorio"],
-        "Dreadnoughts": ["SS Dante Alighieri", "SS Andrea Doria"],
-        "Destroyers": ["SS Da Recco", "SS Carducci"],
-        "Submarines": ["SS Aquila", "SS Toti"]
+        "Carrier": ["SS Roma", "SS Aquila"],
+        "Battleship": ["SS Vittorio Veneto", "SS Littorio"],
+        "Dreadnought": ["SS Dante Alighieri", "SS Andrea Doria"],
+        "Destroyer": ["SS Da Recco", "SS Carducci"],
+        "Submarine": ["SS Aquila", "SS Toti"]
     },
     "Third French Republic": {
-        "Carriers": ["SS Charles de Gaulle", "SS Clemenceau"],
-        "Battleships": ["SS Richelieu", "SS Jean Bart"],
-        "Dreadnoughts": ["SS Paris", "SS Provence"],
-        "Destroyers": ["SS Le Fantasque", "SS Le Terrible"],
-        "Submarines": ["SS Surcouf", "SS Redoutable"]
+        "Carrier": ["SS Charles de Gaulle", "SS Clemenceau"],
+        "Battleship": ["SS Richelieu", "SS Jean Bart"],
+        "Dreadnought": ["SS Paris", "SS Provence"],
+        "Destroyer": ["SS Le Fantasque", "SS Le Terrible"],
+        "Submarine": ["SS Surcouf", "SS Redoutable"]
     },
     "Soviet Union": {
-        "Carriers": ["SS Kuznetsov", "SS Minsk"],
-        "Battleships": ["SS Novorossiysk", "SS Sevastopol"],
-        "Dreadnoughts": ["SS Gangut", "SS Poltava"],
-        "Destroyers": ["SS Gnevny", "SS Smetlivy"],
-        "Submarines": ["SS K-19", "SS K-141"]
+        "Carrier": ["SS Kuznetsov", "SS Minsk"],
+        "Battleship": ["SS Novorossiysk", "SS Sevastopol"],
+        "Dreadnought": ["SS Gangut", "SS Poltava"],
+        "Destroyer": ["SS Gnevny", "SS Smetlivy"],
+        "Submarine": ["SS K-19", "SS K-141"]
     },
     "Dutch Empire": {
-        "Carriers": ["SS Karel Doorman", "SS HNLMS De Zeven Provinciën"],
-        "Battleships": ["SS De Ruyter", "SS HNLMS Kortenaer"],
-        "Dreadnoughts": ["SS Evertsen", "SS Piet Hein"],
-        "Destroyers": ["SS Isaac Sweers", "SS Evertsen"],
-        "Submarines": ["SS O 21", "SS O 23"]
+        "Carrier": ["SS Karel Doorman", "SS HNLMS De Zeven Provinciën"],
+        "Battleship": ["SS De Ruyter", "SS HNLMS Kortenaer"],
+        "Dreadnought": ["SS Evertsen", "SS Piet Hein"],
+        "Destroyer": ["SS Isaac Sweers", "SS Evertsen"],
+        "Submarine": ["SS O 21", "SS O 23"]
     },
     "People's Republic of China": {
-        "Carriers": ["SS Liaoning", "SS Shandong"],
-        "Battleships": ["SS Xining", "SS Zhenjiang"],
-        "Dreadnoughts": ["SS Dalian", "SS Shanghai"],
-        "Destroyers": ["SS Fuchuan", "SS Hohhot"],
-        "Submarines": ["SS Song-class", "SS Yuan-class"]
+        "Carrier": ["SS Liaoning", "SS Shandong"],
+        "Battleship": ["SS Xining", "SS Zhenjiang"],
+        "Dreadnought": ["SS Dalian", "SS Shanghai"],
+        "Destroyer": ["SS Fuchuan", "SS Hohhot"],
+        "Submarine": ["SS Song-class", "SS Yuan-class"]
     },
     "Germany": {
-        "Carriers": ["SS Graf Zeppelin", "SS Bismarck"],
-        "Battleships": ["SS Tirpitz", "SS Scharnhorst"],
-        "Dreadnoughts": ["SS Kaiser", "SS Bayern"],
-        "Destroyers": ["SS Z-52", "SS Z-39"],
-        "Submarines": ["SS U-Boat", "SS Type IX"]
+        "Carrier": ["SS Graf Zeppelin", "SS Bismarck"],
+        "Battleship": ["SS Tirpitz", "SS Scharnhorst"],
+        "Dreadnought": ["SS Kaiser", "SS Bayern"],
+        "Destroyer": ["SS Z-52", "SS Z-39"],
+        "Submarine": ["SS U-Boat", "SS Type IX"]
     },
     "Spanish Empire": {
-        "Carriers": ["SS Principe de Asturias", "SS Juan Carlos I"],
-        "Battleships": ["SS Jaime I", "SS España"],
-        "Dreadnoughts": ["SS Pelayo", "SS Lepanto"],
-        "Destroyers": ["SS Almirante Ferrándiz", "SS Blas de Lezo"],
-        "Submarines": ["SS Tramontana", "SS Isaac Peral"]
+        "Carrier": ["SS Principe de Asturias", "SS Juan Carlos I"],
+        "Battleship": ["SS Jaime I", "SS España"],
+        "Dreadnought": ["SS Pelayo", "SS Lepanto"],
+        "Destroyer": ["SS Almirante Ferrándiz", "SS Blas de Lezo"],
+        "Submarine": ["SS Tramontana", "SS Isaac Peral"]
     },
     
     "Swedish Empire": {
-        "Carriers": ["SS Gotland", "SS Södermanland"],
-        "Battleships": ["SS Gustav V", "SS Karlskrona"],
-        "Dreadnoughts": ["SS Vasa", "SS Kronan"],
-        "Destroyers": ["SS Östergötland", "SS Uppland"],
-        "Submarines": ["SS Hajen", "SS Draken"]
+        "Carrier": ["SS Gotland", "SS Södermanland"],
+        "Battleship": ["SS Gustav V", "SS Karlskrona"],
+        "Dreadnought": ["SS Vasa", "SS Kronan"],
+        "Destroyer": ["SS Östergötland", "SS Uppland"],
+        "Submarine": ["SS Hajen", "SS Draken"]
     },
     "Brazil" : {
-        "Carriers" : ["São Paulo"],
-        "Battleships" : ["Riachuelo", "Parnaíba"],
-        "Dreadnoughts" : ["Minas Geraes", "Santos Dumont"],
-        "Destroyers" : ["Tepetir", "Marcilio Dias"],
-        "Submarines" : ["Timbira", "Humaitá"]
+        "Carrier" : ["São Paulo"],
+        "Battleship" : ["Riachuelo", "Parnaíba"],
+        "Dreadnought" : ["Minas Geraes", "Santos Dumont"],
+        "Destroyer" : ["Tepetir", "Marcilio Dias"],
+        "Submarine" : ["Timbira", "Humaitá"]
     }
 }
