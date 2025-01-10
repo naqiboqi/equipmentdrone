@@ -60,7 +60,8 @@ class Player():
     
     Attributes:
     -----------
-        defense_board : DefenseBoard  Used to store the player's ships.
+        defense_board : DefenseBoard 
+            Used to store the player's ships.
         attack_board : AttackBaord
             Used to store the player's hits and misses.
         fleet : list[Ship]
@@ -91,6 +92,15 @@ class Player():
         return self.member == other.member
     
     def set_ship_names(self, names: dict[str, list[str]]):
+        """Sets the names of the ships in the player's fleet.
+        
+        Names for each ship are determinzed by its `ship_class` and are randomized.
+        
+        Params:
+        -------
+            names: dict[str, list[str]]
+                The possible ship names `(list)` associated with each ship type `(str)`.
+        """
         for i, ship_class in enumerate(names):
             ship = self.fleet[i]
             ship.ship_class = ship_class
@@ -117,8 +127,8 @@ class Player():
         while not (all(ship.confirmed for ship in self.fleet)):
             await sleep(5)
 
-        await sleep(2)
         await self.placement_message.delete()
+        await sleep(2)
 
     def random_place_ships(self, bot_player: bool=False):
         """Randomly place ships on the player's board.
