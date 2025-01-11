@@ -55,13 +55,12 @@ import aiohttp
 import discord
 import datetime
 import itertools
-import pytube
 
 from discord.ext import commands
 from random import shuffle
 from typing import Optional
 
-from .video_load import Video, VideoPlayer
+from .video_load import VideoPlayer
 from .video_load import LYRICS_URL
 
 
@@ -131,7 +130,7 @@ class VideoController(commands.Cog):
         return player
 
     @commands.hybrid_command(name='join', aliases=['connect'])
-    async def connect_(self, ctx: commands.Context):
+    async def _connect(self, ctx: commands.Context):
         """Connects the bot to your current voice channel.
         
         Params:
@@ -146,7 +145,7 @@ class VideoController(commands.Cog):
         await ctx.send("You must be in a voice channel!", delete_after=10)
 
     @commands.hybrid_command(name='play')
-    async def play_(self, ctx: commands.Context, *, video_search: str):
+    async def _play(self, ctx: commands.Context, *, video_search: str):
         """Searches for a video and adds it to the queue.
         
         Will also add all videos from a playlist in order, if the given link is for a playlist.
@@ -178,15 +177,15 @@ class VideoController(commands.Cog):
 
         try:
             if is_playlist:
-                await player.add_playlist_to_queue_(ctx, video_search)
+                await player.add_videos_to_playlist(ctx, video_search)
             else:
-                await player.add_video_to_queue_(ctx, video_search, seek_time)
+                await player.add_video_to_playlist(ctx, video_search, seek_time)
         # A likely result if the playlist is privated.
         except Exception as e:
             await ctx.send(f"An error occurred: {e}", delete_after=10)
 
     @commands.hybrid_command(name='now', aliases=['np'])
-    async def now_playing_(self, ctx: commands.Context):
+    async def _now_playing(self, ctx: commands.Context):
         """Sends a embed showing info for the current video.
         
         Params:
@@ -207,7 +206,7 @@ class VideoController(commands.Cog):
             player.now_playing_message = await ctx.send(embed=now_playing_embed)
 
     @commands.hybrid_command(name='pause')
-    async def pause_(self, ctx: commands.Context):
+    async def _pause(self, ctx: commands.Context):
         """Pauses or unpauses the current video.
         
         Params:
@@ -231,7 +230,7 @@ class VideoController(commands.Cog):
             await ctx.defer()
 
     @commands.hybrid_command(name='lyrics', aliases=['lyric'])
-    async def lyrics_(
+    async def _lyrics(
         self, 
         ctx: commands.Context, 
         *, 
@@ -287,7 +286,7 @@ class VideoController(commands.Cog):
                 return await ctx.send(f"An unknown error occured: {e}")
 
     @commands.hybrid_command(name='queue', aliases=['q', 'playlist'])
-    async def get_queue_(self, ctx: commands.Context):
+    async def _get_queue(self, ctx: commands.Context):
         """Displays the next 10 videos in the queue within an embed.
         
         Params:
@@ -317,7 +316,7 @@ class VideoController(commands.Cog):
         await ctx.send(embed=queue_embed)
 
     @commands.hybrid_command(name='removevideo', aliases=['r'])
-    async def remove_(self, ctx: commands.Context, *, spot: int):
+    async def _remove(self, ctx: commands.Context, *, spot: int):
         """Removes a video at the given spot in the queue.
         
         Params:
@@ -341,7 +340,7 @@ class VideoController(commands.Cog):
             delete_after=10)    
 
     @commands.hybrid_command(name='shuffle')
-    async def shuffle_(self, ctx: commands.Context):
+    async def _shuffle(self, ctx: commands.Context):
         """Shuffles all videos in the queue.
         
         Params:
@@ -355,7 +354,7 @@ class VideoController(commands.Cog):
         await ctx.send("Shuffled.", delete_after=10)
 
     @commands.hybrid_command(name='skip')
-    async def skip_(self, ctx: commands.Context):
+    async def _skip(self, ctx: commands.Context):
         """Skips the currently playing video.
         
         Params:
@@ -374,7 +373,7 @@ class VideoController(commands.Cog):
         await ctx.send("Skipped the video.", delete_after=10)
 
     @commands.hybrid_command(name='stop')
-    async def stop_(self, ctx: commands.Context):
+    async def _stop(self, ctx: commands.Context):
         """Stops the currently playing video.
         
         Params:
@@ -391,7 +390,7 @@ class VideoController(commands.Cog):
         await ctx.send("Stopped the video.", delete_after=10)
 
     @commands.hybrid_command(name='volume', aliases=['vol'])
-    async def change_volume_(self, ctx: commands.Context, *, vol: int):
+    async def _change_volume(self, ctx: commands.Context, *, vol: int):
         """Sets the player volume to the given value.
         
         Params:

@@ -14,7 +14,7 @@ class VideoPlayerView(discord.ui.View):
         self.ctx = ctx
         
     @discord.ui.button(label="⏮️", style=discord.ButtonStyle.blurple)
-    async def backtrack_(
+    async def _backtrack(
         self,
         interaction: discord.Interaction,
         button: discord.ui.Button):
@@ -22,28 +22,26 @@ class VideoPlayerView(discord.ui.View):
         await interaction.response.defer()
     
     @discord.ui.button(label="⏸️", style=discord.ButtonStyle.blurple)
-    async def pause_(
+    async def _pause(
         self,
         interaction: discord.Interaction,
         button: discord.ui.Button):
         
         await self.ctx.invoke(self.bot.get_command("pause"))
         button.label = "▶️" if self.ctx.voice_client.is_paused() else "⏸️"
-        await interaction.response.defer()
     
     @discord.ui.button(label="⏭️", style=discord.ButtonStyle.blurple)
-    async def skip_(
+    async def _skip(
         self,
-        interaction: discord.Interaction):
+        interaction: discord.Interaction,
+        button: discord.ui.Button):
 
         await self.ctx.invoke(self.bot.get_command("skip"))
-        await interaction.response.defer()
     
     @discord.ui.button(label="⏹️", style=discord.ButtonStyle.blurple)
-    async def stop_(
+    async def _stop(
         self,
         interaction: discord.Interaction,
         button: discord.ui.Button):
         
         await self.ctx.invoke(self.bot.get_command("stop"))
-        await interaction.response.defer()

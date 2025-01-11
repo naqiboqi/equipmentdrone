@@ -89,7 +89,7 @@ class VideoPlayer:
             The current volume of the player as a percentage.
     """
     def __init__(self, ctx: commands.Context):
-        self.bot: commands.bot = ctx.bot
+        self.bot = ctx.bot
         self.channel = ctx.channel
         self.cog = ctx.cog
         self.ctx = ctx
@@ -106,7 +106,52 @@ class VideoPlayer:
 
         ctx.bot.loop.create_task(self.player_loop())
         
-    async def add_playlist_to_queue_(
+
+    async def player_loop(self):
+        """The main loop for the media player. Runs as long as the bot is in a voice channel.
+
+        When a `Video` is waiting in the queue, gets the start time for the `Video` and plays it in the bot's
+        current voice channel. Sends the player details embed to the text channel which the play command from
+        `videocontroller` was sent through.
+
+        Times out after 1200 seconds of inactivity, after which the `Player`
+        will be reset by calling `self.destroy()`.
+        """
+        await self.bot.wait_until_ready()
+
+        while not self.bot.is_closed():
+            self.next.clear()
+            try:
+                async with asyncio.timeout(1200):
+                    source = await self.queue.get()
+            except asyncio.TimeoutError:
+                return self.destroy(self.guild)
+            except asyncio.exceptions.CancelledError:
+                return self.destroy(self.guild) 
+
+            if not isinstance(source, Video):
+                try:
+                    source = await Video.prepare_stream(source, loop=self.bot.loop)
+                except Exception as e:
+                    await self.channel.send("There was an error processing your song.")
+                    print(F"Error processing song {e}")
+                    continue
+
+            start_time = time.perf_counter() - source.seeked_time
+            await source.start(start_time, self.volume)
+
+            self.current = source
+            self.guild.voice_client.play(
+                source, 
+                after=lambda song:self.bot.loop.call_soon_threadsafe(self.next.set))
+
+            await self.show_player_details()      
+            await self.timer(self.current.start_time)
+
+            source.cleanup()
+            self.current = None
+
+    async def add_videos_to_playlist(
         self, 
         ctx: commands.Context, 
         playlist_url: str):
@@ -131,7 +176,7 @@ class VideoPlayer:
             f"Added {len(playlist)} videos from **{playlist.title}** to the queue.",
             delete_after=10)
 
-    async def add_video_to_queue_(
+    async def add_video_to_playlist(
         self, 
         ctx: commands.Context,
         video_search: str, 
@@ -205,50 +250,6 @@ class VideoPlayer:
             view = VideoPlayerView(self.bot, self.ctx)
             self.now_playing_message = await self.channel.send(embed=now_playing_embed, view=view)
             print(f"Error {e}")
-
-    async def player_loop(self):
-        """The main loop for the media player. Runs as long as the bot is in a voice channel.
-
-        When a `Video` is waiting in the queue, gets the start time for the `Video` and plays it in the bot's
-        current voice channel. Sends the player details embed to the text channel which the play command from
-        `videocontroller` was sent through.
-
-        Times out after 1200 seconds of inactivity, after which the `Player`
-        will be reset by calling `self.destroy()`.
-        """
-        await self.bot.wait_until_ready()
-
-        while not self.bot.is_closed():
-            self.next.clear()
-            try:
-                async with asyncio.timeout(1200):
-                    source = await self.queue.get()
-            except asyncio.TimeoutError:
-                return self.destroy(self.guild)
-            except asyncio.exceptions.CancelledError:
-                return self.destroy(self.guild) 
-
-            if not isinstance(source, Video):
-                try:
-                    source = await Video.prepare_stream(source, loop=self.bot.loop)
-                except Exception as e:
-                    await self.channel.send("There was an error processing your song.")
-                    print(F"Error processing song {e}")
-                    continue
-
-            start_time = time.perf_counter() - source.seeked_time
-            await source.start(start_time, self.volume)
-
-            self.current = source
-            self.guild.voice_client.play(
-                source, 
-                after=lambda song:self.bot.loop.call_soon_threadsafe(self.next.set))
-
-            await self.show_player_details()      
-            await self.timer(self.current.start_time)
-
-            source.cleanup()
-            self.current = None
 
     def destroy(self, guild: discord.Guild):
         """Disconnects and cleans the player.

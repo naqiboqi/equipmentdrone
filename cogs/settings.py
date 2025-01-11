@@ -10,7 +10,7 @@ class Settings(commands.Cog):
     @commands.hybrid_command(name="sync")
     @commands.is_owner()
     @commands.guild_only()
-    async def sync_commands_(self, ctx):
+    async def _sync_commands(self, ctx):
         """Sync slash commands with the Discord API.       
 
         Only needs to be used when new hybrid commands are added.

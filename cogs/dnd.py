@@ -66,7 +66,7 @@ class DnD(commands.Cog):
         return None
 
     @commands.hybrid_command(name="roll")
-    async def setup_roll_(self, ctx: commands.Context, roll: str="1d6"):
+    async def _setup_roll(self, ctx: commands.Context, roll: str="1d6"):
         """Sends an embed to roll dice with the given number of rolls and sides."""
         result = self.is_valid_roll(roll)
         if not result:
