@@ -93,7 +93,7 @@ class CountryView(discord.ui.View):
         options=[
             discord.SelectOption(label=country, value=str(i))
             for i, country in enumerate(SHIP_NAMES.keys())])
-    async def select_country_(
+    async def _select_country(
         self,
         interaction: discord.Interaction,
         select: discord.ui.Select):

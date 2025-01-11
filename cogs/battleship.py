@@ -69,7 +69,7 @@ class BattleShip(commands.Cog):
         self.player_games: dict[int, Game] = {}
 
     @commands.hybrid_command(name='battleship')
-    async def start_(self, ctx: commands.Context, member: Optional[discord.Member]=None):
+    async def _start(self, ctx: commands.Context, member: Optional[discord.Member]=None):
         """Starts a game of battleship between two players, or against the me!
         
         Player 1 will always go first. If a second player is not specified, then player 1
@@ -97,8 +97,8 @@ class BattleShip(commands.Cog):
         await game.setup(ctx)
 
     @commands.hybrid_command(name='attack')
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def attack_(self, ctx: commands.Context, move: str):
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def _attack(self, ctx: commands.Context, move: str):
         """Attacks the given position on the board. Valid attacks are `A1`, `b9`, `c10`, `d4`, etc.
 
         Params:
@@ -123,14 +123,14 @@ class BattleShip(commands.Cog):
             return await ctx.send(f"The move {move} is not valid, try again.", delete_after=10)
 
         await ctx.send(f"Attacking {move}...", delete_after=5)
-        await sleep(5.5)
+        await sleep(3)
         
         attack, sunk = game.commence_attack(parsed[0], parsed[1])
-        await game.handle_attack_message_(attack, sunk)
+        await game.handle_attack_message(attack, sunk)
         await game.next_turn(ctx)
         
     @commands.hybrid_command(name="movelog")
-    async def show_move_log_(self, ctx: commands.Context):
+    async def _show_move_log(self, ctx: commands.Context):
         """Sends an embed containing all the moves of the game.
         
         Params:

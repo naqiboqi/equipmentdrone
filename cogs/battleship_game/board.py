@@ -70,7 +70,7 @@ class Board():
         self.size = size
         self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
 
-    def is_valid_loc_(self, ship: Ship, y: int, x: int, direction: str):
+    def _is_valid_loc(self, ship: Ship, y: int, x: int, direction: str):
         """Returns whether or not the given location is a valid placement for a ship.
         
         Is used for the initial random placement. 
@@ -218,11 +218,11 @@ class DefenseBoard(Board):
             while not ship.placed_before and not ship.confirmed:
                 y, x = random.randint(0, self.size - 1), random.randint(0, self.size - 1)
                 direction = random.choice(["H", "V"])
-                if self.is_valid_loc_(ship, y, x, direction):
-                    self.place_ship_(ship, y, x, direction, bot_player)
+                if self._is_valid_loc(ship, y, x, direction):
+                    self._place_ship(ship, y, x, direction, bot_player)
                     ship.placed_before = True
 
-    def place_ship_(self, ship: Ship, y: int, x: int, direction: str, bot_player):
+    def _place_ship(self, ship: Ship, y: int, x: int, direction: str, bot_player):
         """Places a ship at a given location on the board.
         
         When placed, the `self.locs` of the ship are updated as well as the symbols
