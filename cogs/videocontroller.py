@@ -141,10 +141,9 @@ class VideoController(commands.Cog):
         """
         if ctx.author.voice:
             channel = ctx.message.author.voice.channel
-            await channel.connect()
-            await ctx.send(f"Connected to voice channel {channel.name}", delete_after=10)
+            return await channel.connect()
 
-        await ctx.send("You must be in a voice channel!")
+        await ctx.send("You must be in a voice channel!", delete_after=10)
 
     @commands.hybrid_command(name='play')
     async def play_(self, ctx: commands.Context, *, video_search: str):
@@ -260,10 +259,10 @@ class VideoController(commands.Cog):
                 "I am not currently playing anything!",
                 delete_after=10)
 
-        if player.now_playing_embed:
-            await player.now_playing_embed.delete()
+        if player.now_playing_message:
+            await player.now_playing_message.delete()
             now_playing_embed = await player.current.get_video_details()
-            player.now_playing_embed = await ctx.send(embed=now_playing_embed)
+            player.now_playing_message = await ctx.send(embed=now_playing_embed)
 
     @commands.hybrid_command(name='pause')
     async def pause_(self, ctx: commands.Context):

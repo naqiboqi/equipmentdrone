@@ -47,6 +47,7 @@ import time
 
 from discord.ext import commands
 from .video import Video
+from .videoplayerview import VideoPlayerView
 
 
 
@@ -75,9 +76,9 @@ class VideoPlayer:
             The queue storing upcoming videos.
         current : Video
             The currently playing video.
-        now_playing_embed : discord.Embed
+        now_playing_embed : discord.Message
             The embed storing the player's current information.
-        queue_embed : discord.Embed
+        queue_embed : discord.Message
             The embed storing the upcoming videos' information.
         loop : bool
             Whether the player is looping the current video.
@@ -96,8 +97,8 @@ class VideoPlayer:
         self.queue = asyncio.Queue()
 
         self.current: Video = None
-        self.now_playing_embed: discord.Embed = None
-        self.queue_embed: discord.Embed = None
+        self.now_playing_message: discord.Message = None
+        self.queue_message: discord.Message = None
         self.loop = False
         self.paused = False
         self.volume = .25
@@ -120,17 +121,17 @@ class VideoPlayer:
             await asyncio.sleep(1.00)
             if self.guild.voice_client.is_playing():
                 elapsed_time = time.perf_counter() - (start_time + paused_time)
-                await self.update_player_details(elapsed_time)
+                await self.show_player_details(elapsed_time)
 
             elif self.paused:
                 paused_time += 1.00
             else:
                 # Case for when the video is finished playing
                 elapsed_time = time.perf_counter() - (start_time + paused_time)
-                await self.update_player_details(elapsed_time)
+                await self.show_player_details(elapsed_time)
                 break    
 
-    async def show_player_details(self):
+    async def show_player_details(self, elapsed_time: float=0.00):
         """Creates and sends an embed showing the current details of the player:
         
         * The current video title and link
@@ -139,24 +140,20 @@ class VideoPlayer:
         * The user who requested the video
         
         If the embed already exists, updates the current embed.
-        """
-        now_playing_embed = await self.current.get_video_details()
-
-        try:
-            self.now_playing_embed = await self.now_playing_embed.edit(embed=now_playing_embed)
-        except Exception as e:
-            self.now_playing_embed = await self.channel.send(embed=now_playing_embed)
-
-    async def update_player_details(self, elapsed_time: float):
-        """Updates the current embed with the new elapsed time.
-
+        
         Params:
         -------
             elapsed_time : float
                 The elapsed time of the video, in seconds.
         """
-        now_playing_embed = await self.current.get_video_details(elapsed_time)
-        await self.now_playing_embed.edit(embed=now_playing_embed)
+        now_playing_embed = await self.current.get_video_details(elapsed_time=elapsed_time)
+
+        try:
+            self.now_playing_message = await self.now_playing_message.edit(embed=now_playing_embed)
+        except AttributeError as e:
+            view = VideoPlayerView(self.bot, self.ctx)
+            self.now_playing_message = await self.channel.send(embed=now_playing_embed, view=view)
+            print(f"Error {e}")
 
     async def player_loop(self):
         """The main loop for the media player. Runs as long as the bot is in a voice channel.
