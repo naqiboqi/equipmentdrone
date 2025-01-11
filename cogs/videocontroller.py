@@ -74,7 +74,7 @@ class VideoController(commands.Cog):
         bot : commands.Bot
             The bot instance.
         players : dict[int, VideoPlayer]
-            The video players associated with each server.
+            The video players associated with each guild's id.
         player_ctx : commands.Context
             The most recently invoked context.
     """
@@ -111,7 +111,7 @@ class VideoController(commands.Cog):
             print(e)
 
     def get_player(self, ctx: commands.Context):
-        """Retrieves the player for a guild given a `context`, 
+        """Retrieves the player for a guild given, 
         otherwise creates it if that guild has no player.
         
         Params:
@@ -178,73 +178,16 @@ class VideoController(commands.Cog):
 
         try:
             if is_playlist:
-                await self.add_playlist_to_queue_(ctx, player, video_search)
+                await player.add_playlist_to_queue_(ctx, video_search)
             else:
-                await self.add_video_to_queue_(ctx, player, video_search, seek_time)
-
+                await player.add_video_to_queue_(ctx, video_search, seek_time)
         # A likely result if the playlist is privated.
         except Exception as e:
             await ctx.send(f"An error occurred: {e}", delete_after=10)
 
-    async def add_playlist_to_queue_(
-        self, 
-        ctx: commands.Context, 
-        player: VideoPlayer, 
-        playlist_url: str):
-        """
-        Adds all videos in the playlist at the given url to the queue.
-        
-        Params:
-        -------
-            ctx : commands.Context
-                The current context associated with a command.
-            player : VideoPlayer 
-                The player for the guild that the command was invoked from.
-            playlist_url : str
-                The url for the `Playlist` to pull sources from.
-        """
-        playlist = pytube.Playlist(playlist_url)
-        sources = await Video.get_sources(
-            ctx=ctx, playlist=playlist, loop=self.bot.loop, download=False)
-
-        for source in sources:
-            await player.queue.put(source)
-
-        await ctx.send(
-            f"Added {len(playlist)} videos from **{playlist.title}** to the queue.",
-            delete_after=10)
-
-    async def add_video_to_queue_(
-        self, 
-        ctx: commands.Context, 
-        player: VideoPlayer, 
-        video_search: str, 
-        seek_time: int):
-        """
-        Adds a single video to the end of the queue.
-        
-        Params:
-            ctx : commands.Context
-                The current context associated with a command.
-            player : VideoPlayer 
-                The player for the guild that the command was invoked from.
-            video_search : str
-                The title to search for.
-            seek_time : float
-                The time to start the video at.
-        """
-        source = await Video.get_source(
-            ctx=ctx, search=video_search, 
-            loop=self.bot.loop, 
-            download=False, 
-            seek_time=seek_time)
-
-        await player.queue.put(source)
-        await ctx.send(f"Added {source.title} to the queue.", delete_after=10)
-
     @commands.hybrid_command(name='now', aliases=['np'])
     async def now_playing_(self, ctx: commands.Context):
-        """Sends a embed showing info for the current vidoe.
+        """Sends a embed showing info for the current video.
         
         Params:
         -------
@@ -252,13 +195,12 @@ class VideoController(commands.Cog):
                 The current context associated with a command.
         """
         vc = ctx.voice_client
-        player = self.get_player(ctx)
-
         if not vc or not vc.is_connected:
             return await ctx.send(
                 "I am not currently playing anything!",
                 delete_after=10)
-
+            
+        player = self.get_player(ctx)
         if player.now_playing_message:
             await player.now_playing_message.delete()
             now_playing_embed = await player.current.get_video_details()
@@ -274,20 +216,19 @@ class VideoController(commands.Cog):
                 The current context associated with a command.
         """
         vc = ctx.voice_client
-        player = self.get_player(ctx)
-
         if not vc or not vc.is_connected():
             return await ctx.send(
                 "I am not currently playing anything!", delete_after=10)
 
+        player = self.get_player(ctx)
         if player.paused:
             vc.resume()
             player.paused = False
-            await ctx.send("Unpaused", delete_after=10)
+            await ctx.defer()
         else:
             vc.pause()
             player.paused = True
-            await ctx.send("Paused", delete_after=10)
+            await ctx.defer()
 
     @commands.hybrid_command(name='lyrics', aliases=['lyric'])
     async def lyrics_(
@@ -308,7 +249,6 @@ class VideoController(commands.Cog):
                 The title whose lyrics to search for.
         """
         vc = ctx.voice_client
-
         if not vc or vc.is_connected():
             return await ctx.send(
                 "I am not currently playing anything!", delete_after=10)

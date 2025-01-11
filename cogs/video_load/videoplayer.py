@@ -43,6 +43,7 @@ Key Features:
 
 import asyncio
 import discord
+import pytube
 import time
 
 from discord.ext import commands
@@ -104,6 +105,56 @@ class VideoPlayer:
         self.volume = .25
 
         ctx.bot.loop.create_task(self.player_loop())
+        
+    async def add_playlist_to_queue_(
+        self, 
+        ctx: commands.Context, 
+        playlist_url: str):
+        """
+        Adds all videos in the playlist at the given url to the queue.
+        
+        Params:
+        -------
+            ctx : commands.Context
+                The current context associated with a command.
+            playlist_url : str
+                The url for the `Playlist` to pull sources from.
+        """
+        playlist = pytube.Playlist(playlist_url)
+        sources = await Video.get_sources(
+            ctx=ctx, playlist=playlist, loop=self.bot.loop, download=False)
+
+        for source in sources:
+            await self.queue.put(source)
+
+        await ctx.send(
+            f"Added {len(playlist)} videos from **{playlist.title}** to the queue.",
+            delete_after=10)
+
+    async def add_video_to_queue_(
+        self, 
+        ctx: commands.Context,
+        video_search: str, 
+        seek_time: int):
+        """
+        Adds a single video to the end of the queue.
+        
+        Params:
+            ctx : commands.Context
+                The current context associated with a command.
+            video_search : str
+                The title to search for.
+            seek_time : float
+                The time to start the video at.
+        """
+        source = await Video.get_source(
+            ctx=ctx, search=video_search, 
+            loop=self.bot.loop, 
+            download=False, 
+            seek_time=seek_time)
+
+        await self.queue.put(source)
+        await ctx.send(f"Added {source.title} to the queue.", delete_after=10)
 
     async def timer(self, start_time: float):
         """Keeps track of the video's runtime, and calls update_player_details()

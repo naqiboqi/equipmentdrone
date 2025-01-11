@@ -90,11 +90,6 @@ async def get_ffmpeg_options(seek_time: float = 0.00) -> dict:
     -------
     seek_time: float
         Time to seek to in the video, in seconds.
-
-    Returns:
-    --------
-    dict
-        The ffmpeg options for the video.
     """
     return {
         'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
@@ -167,7 +162,7 @@ class Video(discord.PCMVolumeTransformer):
         playlist: Playlist,
         *,
         loop: asyncio.AbstractEventLoop,
-        download: bool = False):
+        download: bool=False):
         """Gets the source object for each video in the playlist through its URL.
 
         Params:
@@ -194,8 +189,8 @@ class Video(discord.PCMVolumeTransformer):
         search: str,
         *,
         loop: asyncio.AbstractEventLoop,
-        download: bool = False,
-        seek_time: float = 0.00):
+        download: bool=False,
+        seek_time: float=0.00):
         """Gets the source for the video obtained from searching for the `string`,
         returning the first result from YouTube.
 
@@ -279,7 +274,7 @@ class Video(discord.PCMVolumeTransformer):
         self.start_time = start_time
         self.volume = volume
 
-    async def get_video_details(self, elapsed_time: float = 0.00):
+    async def get_video_details(self, elapsed_time: float=0.00):
         """Returns an embed containing the details of the video source object.
 
         Params:
