@@ -59,9 +59,9 @@ import itertools
 from discord.ext import commands
 from random import shuffle
 from typing import Optional
-
 from .video_load import VideoPlayer
 from .video_load import LYRICS_URL
+from .utils import PageView
 
 
 
@@ -159,7 +159,7 @@ class VideoController(commands.Cog):
         """
         vc = ctx.voice_client
         if not vc:
-            await ctx.invoke(self.connect_)
+            await ctx.invoke(self._connect)
 
         if not video_search:
             return await ctx.send(
@@ -202,7 +202,7 @@ class VideoController(commands.Cog):
         player = self.get_player(ctx)
         if player.now_playing_message:
             await player.now_playing_message.delete()
-            now_playing_embed = await player.current.get_video_details()
+            now_playing_embed = await player.current.get_embed()
             player.now_playing_message = await ctx.send(embed=now_playing_embed)
 
     @commands.hybrid_command(name='pause')
@@ -285,8 +285,8 @@ class VideoController(commands.Cog):
             except Exception as e:
                 return await ctx.send(f"An unknown error occured: {e}")
 
-    @commands.hybrid_command(name='queue', aliases=['q', 'playlist'])
-    async def _get_queue(self, ctx: commands.Context):
+    @commands.hybrid_command(name='playlist')
+    async def _show_upcoming(self, ctx: commands.Context):
         """Displays the next 10 videos in the queue within an embed.
         
         Params:
@@ -299,23 +299,10 @@ class VideoController(commands.Cog):
                 "I am not currently connected to voice!", delete_after=10)
 
         player = self.get_player(ctx)
-        if player.queue.empty():
-            return await ctx.send("The queue is empty.")
+        view = PageView("Upcoming Videos", player.video_playlist.get_video_descriptions())
+        player.playlist_message = await ctx.send(embed=view.pages[0])
 
-        upcoming = list(itertools.islice(player.queue._queue, 0, 10))
-        video_names = '\n'.join(
-            f"{index + 1}. **{video['title']}** |"
-            f"`{datetime.timedelta(seconds=video['duration'])}`"
-                for index, video in enumerate(upcoming))
-
-        queue_embed = discord.Embed(
-            title=f"Upcoming - Next {len(upcoming)} videos",
-            description=video_names,
-            color=0x206694)
-
-        await ctx.send(embed=queue_embed)
-
-    @commands.hybrid_command(name='removevideo', aliases=['r'])
+    @commands.hybrid_command(name='removevideo', aliases=['rremove'])
     async def _remove(self, ctx: commands.Context, *, spot: int):
         """Removes a video at the given spot in the queue.
         

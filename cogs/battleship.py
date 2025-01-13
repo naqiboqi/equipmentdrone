@@ -50,7 +50,7 @@ from asyncio import sleep
 from discord.ext import commands
 from typing import Optional
 from .battleship_game import Player, Game
-from .utils import LogView
+from .utils import PageView
 
 
 
@@ -142,12 +142,8 @@ class BattleShip(commands.Cog):
         if not game:
             return await ctx.send("You are not in a game!")
         
-        pages = await game.log_.get_embed_pages()
-        if not pages:
-            return await ctx.send("The log is empty.")
-        
-        view = LogView(pages)
-        game.log_message = await ctx.send(embed=pages[0], view=view)
+        view = PageView("Battleship Game Log", game.log_.events)
+        game.log_message = await ctx.send(embed=view.pages[0], view=view)
         
     async def end_game_(self, ctx: commands.Context, game: Game):
         """Ends the currently running game.
