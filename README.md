@@ -71,5 +71,5 @@ Contains everything you need to know about the `discord.py` library
 #### To-Do
 -------------
 - [ ] Add seeking to media controls
-- [ ] Complete battleship implementation
-- [ ] Host the bot with Docker
+- [ ] Host bot on a computer that is not my daily driver
+- [X] Complete battleship implementation
