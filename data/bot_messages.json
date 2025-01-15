@@ -10,7 +10,6 @@
         "Definitely did not target a random spot.",
         "Out of all the places to put a ship, that definitely was a choice."
     ],
-
     "miss_messages" : [
         "Damn, I missed...",
         "Oh shoot! Well, I did shoot. But I missed.",
@@ -22,7 +21,6 @@
         "I curse you and all your kin.",
         "Do me a favor and give me a coordinate. Please?"
     ],
-
     "sunk_messages" : [
         "Another one bites the bottom of the ocean floor.",
         "Well call me Sir Admiral Nelson! I sunk your ship, and another medal for my arsenal.",
