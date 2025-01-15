@@ -5,7 +5,8 @@ import re
 from asyncio import sleep
 from discord.ext import commands
 from typing import Optional
-from .countryview import CountryView, SHIP_NAMES
+from .constants import ship_names
+from .countryview import CountryView
 from .player import Player
 from ..utils import EventLog
 
@@ -105,15 +106,15 @@ class Game:
 
         if self.bot_player:
             bot_choices = [
-                country for country in SHIP_NAMES.keys() if country != player_1.country]
+                country for country in ship_names.keys() if country != player_1.country]
             player_2.country = random.choice(bot_choices)
 
         # Wait until both players have chosen a country
         while not player_1.country or not player_2.country:
             await sleep(5)
 
-        player_1.set_ship_names(SHIP_NAMES[player_1.country])
-        player_2.set_ship_names(SHIP_NAMES[player_2.country])
+        player_1.set_ship_names(ship_names[player_1.country])
+        player_2.set_ship_names(ship_names[player_2.country])
         self.country_message = await self.country_message.edit(view=None)
         
         await sleep(5)

@@ -27,44 +27,15 @@ of available countries, and updates the game's state accordingly when a selectio
 - **`json`**: For loading and parsing the `ship_names.json` file, which contains the available countries.
 - **`os`**: For managing file paths and ensuring proper access to the `ship_names.json` file.
 - **`player`**: Imports the `Player` class, which represents players in the game and stores their country choice.
-
-### Constants:
-- **`SHIP_JSON_PATH`**: Path to the JSON file that stores the available ship names and countries.
-- **`SHIP_NAMES`**: Dictionary containing the countries loaded from the `ship_names.json` file.
 """
 
 
 
 import discord
-import json
-import os
 
 from .player import Player
+from .constants import ship_names
 
-
-
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
-SHIP_JSON_PATH = os.path.join(DATA_DIR, "ship_names.json")
-
-
-def load_ship_names_() -> dict[str, dict[str, list[str]]]:
-    """Loads a json file given a path and returns its content.
-    
-    Throws an error if the file does not exist or is not a valid json.
-    """
-    try: 
-        with open(SHIP_JSON_PATH) as file:
-            return json.load(file)
-    except FileNotFoundError:
-        print(f"The file {SHIP_JSON_PATH} does not exist.")
-        return {}
-    except json.JSONDecodeError:
-        print(f"The file {SHIP_JSON_PATH} is not a valid json.")
-        return {}
-
-
-SHIP_NAMES = load_ship_names_()
-"""Dictionary containing the countries loaded from `ship_names.json`."""
 
 
 class CountryView(discord.ui.View):
@@ -87,18 +58,19 @@ class CountryView(discord.ui.View):
         super().__init__(timeout=timeout)
         self.player_1 = player_1
         self.player_2 = player_2
+        print(ship_names)
 
     @discord.ui.select(
         placeholder="Select a country",
         options=[
             discord.SelectOption(label=country, value=str(i))
-            for i, country in enumerate(SHIP_NAMES.keys())])
+            for i, country in enumerate(ship_names.keys())])
     async def _select_country(
         self,
         interaction: discord.Interaction,
         select: discord.ui.Select):
 
-        country_names = list(SHIP_NAMES.keys())
+        country_names = list(ship_names.keys())
 
         if self.player_1.member == interaction.user:
             self.player_1.country = country_names[int(select.values[0])]
