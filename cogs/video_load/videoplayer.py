@@ -48,6 +48,7 @@ import time
 
 from discord.ext import commands
 from .video import Video
+from .videoplaylist import VideoPlaylist
 from .videoplayerview import VideoPlayerView
 
 
@@ -95,59 +96,38 @@ class VideoPlayer:
         self.ctx = ctx
         self.guild = ctx.guild
         self.next = asyncio.Event()
-        self.queue = asyncio.Queue()
+        self.video_playlist = VideoPlaylist()
 
         self.current: Video = None
         self.now_playing_message: discord.Message = None
-        self.queue_message: discord.Message = None
-        self.loop = False
+        self.playlist_message: discord.Message = None
         self.paused = False
-        self.volume = .25
+        self.volume = .30
 
         ctx.bot.loop.create_task(self.player_loop())
         
-
     async def player_loop(self):
-        """The main loop for the media player. Runs as long as the bot is in a voice channel.
-
-        When a `Video` is waiting in the queue, gets the start time for the `Video` and plays it in the bot's
-        current voice channel. Sends the player details embed to the text channel which the play command from
-        `videocontroller` was sent through.
-
-        Times out after 1200 seconds of inactivity, after which the `Player`
-        will be reset by calling `self.destroy()`.
-        """
         await self.bot.wait_until_ready()
 
         while not self.bot.is_closed():
+            print("are we waiting?")
+            await self.video_playlist.ready.wait()
+
             self.next.clear()
-            try:
-                async with asyncio.timeout(1200):
-                    source = await self.queue.get()
-            except asyncio.TimeoutError:
-                return self.destroy(self.guild)
-            except asyncio.exceptions.CancelledError:
-                return self.destroy(self.guild) 
-
+            source = self.video_playlist.now_playing.content
             if not isinstance(source, Video):
-                try:
-                    source = await Video.prepare_stream(source, loop=self.bot.loop)
-                except Exception as e:
-                    await self.channel.send("There was an error processing your song.")
-                    print(F"Error processing song {e}")
-                    continue
-
-            start_time = time.perf_counter() - source.seeked_time
-            await source.start(start_time, self.volume)
+                print(f"Error: The next video is not valid: {source}")
+                continue
 
             self.current = source
-            self.guild.voice_client.play(
-                source, 
-                after=lambda song:self.bot.loop.call_soon_threadsafe(self.next.set))
+            start_time = time.perf_counter() - source.seeked_time
+            source.start(start_time, self.volume)
+            
+            self.guild.voice_client.play(source, after=lambda e: self.bot.loop.call_soon_threadsafe(self.video_playlist.advance))
 
-            await self.show_player_details()      
+            await self.show_player_details()
             await self.timer(self.current.start_time)
-
+            
             source.cleanup()
             self.current = None
 
@@ -170,7 +150,7 @@ class VideoPlayer:
             ctx=ctx, playlist=playlist, loop=self.bot.loop, download=False)
 
         for source in sources:
-            await self.queue.put(source)
+            await self.video_playlist.add_to_end(source)
 
         await ctx.send(
             f"Added {len(playlist)} videos from **{playlist.title}** to the queue.",
@@ -198,7 +178,7 @@ class VideoPlayer:
             download=False, 
             seek_time=seek_time)
 
-        await self.queue.put(source)
+        await self.video_playlist.add_to_end(source)
         await ctx.send(f"Added {source.title} to the queue.", delete_after=10)
 
     async def timer(self, start_time: float):
@@ -242,7 +222,7 @@ class VideoPlayer:
             elapsed_time : float
                 The elapsed time of the video, in seconds.
         """
-        now_playing_embed = await self.current.get_video_details(elapsed_time=elapsed_time)
+        now_playing_embed = self.current.get_embed(elapsed_time=elapsed_time)
 
         try:
             self.now_playing_message = await self.now_playing_message.edit(embed=now_playing_embed)

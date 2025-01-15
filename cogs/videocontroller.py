@@ -53,8 +53,6 @@ and detailed playback embeds.
 
 import aiohttp
 import discord
-import datetime
-import itertools
 
 from discord.ext import commands
 from random import shuffle
@@ -96,8 +94,7 @@ class VideoController(commands.Cog):
             ctx = self.player_ctx
 
         player = self.get_player(ctx)
-        player.loop = False
-        player.queue._queue = [] 
+        player.video_playlist.cleanup() 
 
         try:
             await guild.voice_client.disconnect()
@@ -202,9 +199,29 @@ class VideoController(commands.Cog):
         player = self.get_player(ctx)
         if player.now_playing_message:
             await player.now_playing_message.delete()
-            now_playing_embed = await player.current.get_embed()
+            now_playing_embed = player.current.get_embed()
             player.now_playing_message = await ctx.send(embed=now_playing_embed)
 
+    @commands.hybrid_command(name='playlist')
+    async def _show_upcoming(self, ctx: commands.Context):
+        """Displays the next 10 videos in the queue within an embed.
+        
+        Params:
+            ctx : commands.Context
+                The current context associated with a command.
+        """
+        vc = ctx.voice_client
+        if not vc or not vc.is_connected():
+            return await ctx.send(
+                "I am not currently connected to voice!", delete_after=10)
+
+        player = self.get_player(ctx)
+        view = PageView(
+            f"Upcoming Videos {player.video_playlist}",
+            player.video_playlist.get_upcoming())
+        
+        player.playlist_message = await ctx.send(embed=view.pages[0], view=view)
+    
     @commands.hybrid_command(name='pause')
     async def _pause(self, ctx: commands.Context):
         """Pauses or unpauses the current video.
@@ -223,12 +240,110 @@ class VideoController(commands.Cog):
         if player.paused:
             vc.resume()
             player.paused = False
-            await ctx.defer()
         else:
             vc.pause()
             player.paused = True
-            await ctx.defer()
+            
+        await ctx.send("Paused the video" if player.paused else "Unpaused the video.", delete_after=10)
 
+    @commands.hybrid_command(name='skip')
+    async def _skip(self, ctx: commands.Context):
+        """Skips to the next video.
+        
+        Params:
+        -------
+            ctx : commands.Context
+                The current context associated with a command.
+        """
+        vc = ctx.voice_client
+        if not vc or not vc.is_connected():
+            return await ctx.send(
+                "I am not currently playing anything!", delete_after=10)
+
+        vc.stop()
+        await ctx.send("Skipped the video.", delete_after=10)
+
+    @commands.hybrid_command(name='stop')
+    async def _stop(self, ctx: commands.Context):
+        """Stops the currently playing video.
+        
+        Params:
+        -------
+            ctx : commands.Context
+                The current context associated with a command.
+        """
+        vc = ctx.voice_client
+        if not vc or not vc.is_connected():
+            return await ctx.send(
+                "I am not currently playing anything!", delete_after=10)
+
+        await self.cleanup(ctx.guild, ctx)
+        await ctx.send("Stopped the player.", delete_after=10)
+
+    @commands.hybrid_command(name='volume', aliases=['vol'])
+    async def _change_volume(self, ctx: commands.Context, *, vol: int):
+        """Sets the player volume to the given value.
+        
+        Params:
+            ctx : commands.Context
+                The current context associated with a command.
+            vol : int
+                The new volume level, must be between `1` and `100`.
+        """
+        vc = ctx.voice_client
+        if not vc or not vc.is_connected():
+            return await ctx.send(
+                "I am not currently connected to voice!", delete_after=10)
+        elif (not 1 <= vol <= 100) or (vol is None):
+            return await ctx.send(
+                "Please enter a value between 1 and 100.", delete_after=10)
+        elif vc.source:
+            vc.source.volume = vol / 100
+
+        player = self.get_player(ctx)
+        player.volume = vol / 100
+        await ctx.send(f"Set the volume to {vol}%.", delete_after=10)
+        
+    @commands.command(name="loop")
+    async def _loop(self, ctx: commands.Context):
+        pass
+        
+        
+    @commands.hybrid_command(name='removevideo', aliases=['rremove'])
+    async def _remove(self, ctx: commands.Context, *, spot: int):
+        """Removes a video at the given spot in the queue.
+        
+        Params:
+        -------
+            ctx : commands.Context
+                The current context associated with a command.
+            spot : int
+                The index of the video to remove.
+        """
+        player = self.get_player(ctx)
+        try:
+            source = player.video_playlist.remove(spot)
+        except IndexError:
+            return await ctx.send(
+                f"There is no video at spot {spot} in the queue.", delete_after=10)
+
+        await ctx.send(
+            f"Removed `{source.title}` from spot {spot} in the queue.", 
+            delete_after=10)    
+
+    @commands.hybrid_command(name='shuffle')
+    async def _shuffle(self, ctx: commands.Context):
+        """Shuffles all videos in the queue.
+        
+        Params:
+        -------
+            ctx : commands.Context
+                The current context associated with a command.
+        """
+        player = self.get_player(ctx)
+        player.video_playlist.shuffle()
+        await ctx.send("Shuffled the playlist.", delete_after=10)
+        
     @commands.hybrid_command(name='lyrics', aliases=['lyric'])
     async def _lyrics(
         self, 
@@ -284,121 +399,6 @@ class VideoController(commands.Cog):
                 return await ctx.send("Failed to connect to the lyrics API.", delete_after=10)
             except Exception as e:
                 return await ctx.send(f"An unknown error occured: {e}")
-
-    @commands.hybrid_command(name='playlist')
-    async def _show_upcoming(self, ctx: commands.Context):
-        """Displays the next 10 videos in the queue within an embed.
-        
-        Params:
-            ctx : commands.Context
-                The current context associated with a command.
-        """
-        vc = ctx.voice_client
-        if not vc or not vc.is_connected():
-            return await ctx.send(
-                "I am not currently connected to voice!", delete_after=10)
-
-        player = self.get_player(ctx)
-        view = PageView("Upcoming Videos", player.video_playlist.get_video_descriptions())
-        player.playlist_message = await ctx.send(embed=view.pages[0])
-
-    @commands.hybrid_command(name='removevideo', aliases=['rremove'])
-    async def _remove(self, ctx: commands.Context, *, spot: int):
-        """Removes a video at the given spot in the queue.
-        
-        Params:
-        -------
-            ctx : commands.Context
-                The current context associated with a command.
-            spot : int
-                The index of the video to remove.
-        """
-        player = self.get_player(ctx)
-        videos_queue = player.queue._queue
-        try:
-            video_title = videos_queue[spot - 1]['title']
-            del videos_queue[spot - 1]
-        except IndexError:
-            return await ctx.send(
-                f"There is no video at spot {spot} in the queue.", delete_after=10)
-
-        await ctx.send(
-            f"Removed `{video_title}` from spot {spot} in the queue.", 
-            delete_after=10)    
-
-    @commands.hybrid_command(name='shuffle')
-    async def _shuffle(self, ctx: commands.Context):
-        """Shuffles all videos in the queue.
-        
-        Params:
-        -------
-            ctx : commands.Context
-                The current context associated with a command.
-        """
-        player = self.get_player(ctx)
-        videos = player.queue._queue
-        shuffle(videos)
-        await ctx.send("Shuffled.", delete_after=10)
-
-    @commands.hybrid_command(name='skip')
-    async def _skip(self, ctx: commands.Context):
-        """Skips the currently playing video.
-        
-        Params:
-        -------
-            ctx : commands.Context
-                The current context associated with a command.
-        """
-        vc = ctx.voice_client
-        if not vc or not vc.is_connected():
-            return await ctx.send(
-                "I am not currently playing anything!", delete_after=10)
-        elif not vc.is_playing():
-            return
-
-        vc.stop()
-        await ctx.send("Skipped the video.", delete_after=10)
-
-    @commands.hybrid_command(name='stop')
-    async def _stop(self, ctx: commands.Context):
-        """Stops the currently playing video.
-        
-        Params:
-        -------
-            ctx : commands.Context
-                The current context associated with a command.
-        """
-        vc = ctx.voice_client
-        if not vc or not vc.is_connected():
-            return await ctx.send(
-                "I am not currently playing anything!", delete_after=10)
-
-        await self.cleanup(ctx.guild, ctx)
-        await ctx.send("Stopped the video.", delete_after=10)
-
-    @commands.hybrid_command(name='volume', aliases=['vol'])
-    async def _change_volume(self, ctx: commands.Context, *, vol: int):
-        """Sets the player volume to the given value.
-        
-        Params:
-            ctx : commands.Context
-                The current context associated with a command.
-            vol : int
-                The new volume level, must be between `1` and `100`.
-        """
-        vc = ctx.voice_client
-        if not vc or not vc.is_connected():
-            return await ctx.send(
-                "I am not currently connected to voice!", delete_after=10)
-        elif (not 1 <= vol <= 100) or (vol is None):
-            return await ctx.send(
-                "Please enter a value between 1 and 100.", delete_after=10)
-        elif vc.source:
-            vc.source.volume = vol / 100
-
-        player = self.get_player(ctx)
-        player.volume = vol / 100
-        await ctx.send(f"Set the volume to {vol}%.", delete_after=10)
 
 
 async def setup(bot: commands.Bot):

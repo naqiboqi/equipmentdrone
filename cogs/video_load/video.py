@@ -47,7 +47,7 @@ Key Features:
 
 
 import asyncio
-import datetime
+
 import discord
 import time
 
@@ -145,15 +145,15 @@ class Video(discord.PCMVolumeTransformer):
         self.start_time = 0.00
         self.progress: ProgressBar = None
 
-    def __getitem__(self, item: str):
-        """Allows access to attributes similar to a dict.
+    def __getitem__(self, item_name: str):
+        """Allows access to attributes similarly to a dict.
         
         Params:
         -------
-        item: str
+        item_name: str
             The attribute name to access.
         """
-        return self.__getattribute__(item)
+        return self.__getattribute__(item_name)
 
     @classmethod
     async def get_sources(
@@ -226,8 +226,7 @@ class Video(discord.PCMVolumeTransformer):
             discord.FFmpegPCMAudio(filename, **options),
             data=data,
             requester=ctx.author,
-            duration=data['duration']
-        )
+            duration=data['duration'])
 
     @classmethod
     async def prepare_stream(
@@ -256,11 +255,7 @@ class Video(discord.PCMVolumeTransformer):
             discord.FFmpegPCMAudio(data['url']), data=data,
             requester=requester, duration=duration)
 
-    def get_duration_datetime(self):
-        """Returns the video duration as an amount in seconds."""
-        return datetime.timedelta(seconds=self.duration).total_seconds()
-
-    async def start(self, start_time: float, volume: float):
+    def start(self, start_time: float, volume: float):
         """Initializes the settings for the video source object.
 
         Params:
@@ -274,7 +269,7 @@ class Video(discord.PCMVolumeTransformer):
         self.start_time = start_time
         self.volume = volume
 
-    async def get_video_details(self, elapsed_time: float=0.00):
+    def get_embed(self, elapsed_time: float=0.00):
         """Returns an embed containing the details of the video source object.
 
         Params:
@@ -292,9 +287,8 @@ class Video(discord.PCMVolumeTransformer):
         now_playing_embed = discord.Embed(
             title=self.title, url=self.web_url,
             description=(F"\n\n{current_progress}\n\n{desc_field}"),
-            color=0xa84300)
+            color=discord.Color.red())
 
         now_playing_embed.set_footer(text=F"Volume: {self.volume * 100}%")
         now_playing_embed.set_thumbnail(url=self.thumbnail)
-
         return now_playing_embed
