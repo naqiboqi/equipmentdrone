@@ -54,7 +54,7 @@ class PageView(discord.ui.View):
             return [discord.Embed(
                 title=self.title, 
                 description="No items to display",
-                color=0x206694)]
+                color=discord.Color.red())]
 
         pages: list[discord.Embed] = []
         for page_content in pages_content:
@@ -62,9 +62,9 @@ class PageView(discord.ui.View):
             page = discord.Embed(
                 title=self.title, 
                 description=description, 
-                color=0x206694)
+                color=discord.Color.red())
 
-            page.set_footer(text=f"Page {len(pages) + 1} | {len(pages_content)}")
+            page.set_footer(text=f"Page {len(pages) + 1} out of {len(pages_content)}")
             pages.append(page)
 
         return pages
@@ -73,7 +73,7 @@ class PageView(discord.ui.View):
         disable_prev = self.page_num == 0
         self._previous_button.disabled = disable_prev
         
-        disable_next = self.page_num == len(self.pages - 1)
+        disable_next = self.page_num == (len(self.pages) - 1)
         self._next_button.disabled = disable_next
         
     @discord.ui.button(label="Previous", style=discord.ButtonStyle.blurple)
@@ -95,7 +95,7 @@ class PageView(discord.ui.View):
         else:
             await interaction.response.defer()
 
-        await self._update_buttons()
+        self._update_buttons()
 
     @discord.ui.button(label="Next", style=discord.ButtonStyle.blurple)
     async def _next_button(
@@ -116,4 +116,4 @@ class PageView(discord.ui.View):
         else:
             await interaction.response.defer()
 
-        await self._update_buttons()
+        self._update_buttons()

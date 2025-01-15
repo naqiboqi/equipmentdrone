@@ -110,21 +110,3 @@ class EventLog():
         """
         event = Event(participants, event_type, event)
         self.events.append(event)
-        print(event)
-
-    async def get_embed_pages(self, max_events_per_page=20):
-        """Generates embed pages for the game log."""
-        event_slices = [self.events[i:i + max_events_per_page]
-            for i in range(0, len(self.events), max_events_per_page)]
-
-        pages: list[Embed] = []
-        for event_slice in event_slices:
-            events = "\n".join(str(event) for event in event_slice)
-            page = Embed(
-                title="Game Log", 
-                description=events, 
-                color=0x206694)
-
-            pages.append(page)
-
-        return pages
