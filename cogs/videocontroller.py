@@ -1,7 +1,7 @@
 """
 This module implements a video player cog for a Discord bot, designed to manage video playback 
 and user interaction within a server (guild). It utilizes the `discord.py` library to 
-interact with Discord APIs, providing functionality for media playback, queue management, 
+interact with Discord APIs, providing functionality for media playback, playlist management, 
 and detailed playback embeds.
 
 ### Key Features:
@@ -10,10 +10,10 @@ and detailed playback embeds.
     - Support for pausing, resuming, looping, and volume control.
     - Handling of YouTube video links and playlists.
 
-- **Queue Management**:
-    - Manage a queue of `Video` objects for seamless playback.
-    - Add videos to the front of the queue or in order of requests.
-    - Skip to the next video or replay videos in the queue.
+- **Playlist Management**:
+    - Manage a playlist of `Video` objects for seamless playback.
+    - Add videos to the end of the playlist or in order of requests.
+    - Skip to the next video or replay videos in the playlist.
 
 - **Embed Generation**:
     - Generate real-time playback embeds displaying:
@@ -23,29 +23,24 @@ and detailed playback embeds.
     - Update playback embeds as the video progresses.
 
 - **Asynchronous Operations**:
-    - Utilize `asyncio` for non-blocking queue and playback handling.
+    - Utilize `asyncio` for non-blocking playlist and playback handling.
     - Manage playback state and elapsed time tracking efficiently.
 
 ### Classes:
 - **`VideoController`**:
     Manages video playback in a Discord guild. Handles:
     - Playback control (start, pause, resume, loop).
-    - Queue operations and embed updates.
+    - Playlist operations and embed updates.
     - Resource cleanup upon playback end.
 
 ### Constants:
 - **`LYRICS_URL`**: The api url for obtaining video lyrics.
 
 ### Dependencies:
-- **`asyncio`**: For asynchronous event handling and queue management.
+- **`aiohttp`**: For making GET requests to `some-random-api`.
 - **`discord`**: For interacting with Discord APIs and sending embeds.
-
-- **`itertools`**: For creating and managing queues.
-- **`pytube`**: For downloading and processing YouTube videos.
 - **`typing`**: For type hinting and function signatures.
 - **`discord.ext`**: For Discord bot command usage.
-- **`random`**: For shuffling the queue.
-- **`video`**: For representing video sources.
 - **`videoplayer`**: For playing queued videos.
 """
 
@@ -55,7 +50,6 @@ import aiohttp
 import discord
 
 from discord.ext import commands
-from random import shuffle
 from typing import Optional
 from .video_load import VideoPlayer
 from .video_load import LYRICS_URL
@@ -94,13 +88,12 @@ class VideoController(commands.Cog):
             ctx = self.player_ctx
 
         player = self.get_player(ctx)
-        player.video_playlist.cleanup() 
+        await player.cleanup()
 
         try:
             await guild.voice_client.disconnect()
         except AttributeError as e:
             print(e)
-
         try:
             del self.players[guild.id]
         except KeyError as e:
@@ -143,7 +136,7 @@ class VideoController(commands.Cog):
 
     @commands.hybrid_command(name='play')
     async def _play(self, ctx: commands.Context, *, video_search: str):
-        """Searches for a video and adds it to the queue.
+        """Searches for a video and adds it to the playlist.
         
         Will also add all videos from a playlist in order, if the given link is for a playlist.
         
@@ -160,7 +153,7 @@ class VideoController(commands.Cog):
 
         if not video_search:
             return await ctx.send(
-                "Please provide a video to look for.", delete_after=10)
+                "Please provide a video to search for.", delete_after=10)
 
         player = self.get_player(ctx)
         self.player_ctx = ctx
@@ -204,7 +197,7 @@ class VideoController(commands.Cog):
 
     @commands.hybrid_command(name='playlist')
     async def _show_upcoming(self, ctx: commands.Context):
-        """Displays the next 10 videos in the queue within an embed.
+        """Displays the next 30 videos in the playlist within an embed.
         
         Params:
             ctx : commands.Context
@@ -217,8 +210,9 @@ class VideoController(commands.Cog):
 
         player = self.get_player(ctx)
         view = PageView(
-            f"Upcoming Videos {player.video_playlist}",
-            player.video_playlist.get_upcoming())
+            title=f"{player.video_playlist}", 
+            items=player.video_playlist.get_upcoming(),
+            max_items_per_page=30)
         
         player.playlist_message = await ctx.send(embed=view.pages[0], view=view)
     
@@ -262,6 +256,26 @@ class VideoController(commands.Cog):
 
         vc.stop()
         await ctx.send("Skipped the video.", delete_after=10)
+        
+    @commands.hybrid_command(name="prev", aliases=["previous", "back"])
+    async def _prev(self, ctx: commands.Context):
+        """Skips to the next video.
+        
+        Params:
+        -------
+            ctx : commands.Context
+                The current context associated with a command.
+        """
+        vc = ctx.voice_client
+        if not vc or not vc.is_connected():
+            return await ctx.send(
+                "I am not currently playing anything!", delete_after=10)
+
+        await ctx.send("Placeholder")
+        # player = self.get_player(ctx)
+        # player.video_playlist.forward = False
+        # vc.stop()
+        # await ctx.send("Going to previous video.", delete_after=10)
 
     @commands.hybrid_command(name='stop')
     async def _stop(self, ctx: commands.Context):
@@ -302,16 +316,43 @@ class VideoController(commands.Cog):
 
         player = self.get_player(ctx)
         player.volume = vol / 100
-        await ctx.send(f"Set the volume to {vol}%.", delete_after=10)
+        await ctx.send(f"Set the volume to `{vol}`%.", delete_after=10)
         
-    @commands.command(name="loop")
-    async def _loop(self, ctx: commands.Context):
-        pass
+    @commands.hybrid_command(name="loopall")
+    async def _loop_all(self, ctx: commands.Context):
+        vc = ctx.voice_client
+        if not vc or not vc.is_connected():
+            return await ctx.send(
+                "I am not currently connected to voice!", delete_after=10)
+            
+        player = self.get_player(ctx)
         
+        loop = player.video_playlist.loop_all
+        player.video_playlist.loop_all = not loop
+        player.video_playlist.loop_one = False
+        
+        message = "Now looping all" if not loop else "Stopped looping"
+        await ctx.send(message)
+    
+    @commands.hybrid_command(name="loopone")
+    async def _loop_one(self, ctx: commands.Context):
+        vc = ctx.voice_client
+        if not vc or not vc.is_connected():
+            return await ctx.send(
+                "I am not currently connected to voice!", delete_after=10)
+            
+        player = self.get_player(ctx)
+        
+        loop = player.video_playlist.loop_one
+        player.video_playlist.loop_one = not loop
+        player.video_playlist.loop_all = False
+        
+        message = "Now looping the current video" if not loop else "Stopped looping"
+        await ctx.send(message)
         
     @commands.hybrid_command(name='removevideo', aliases=['rremove'])
     async def _remove(self, ctx: commands.Context, *, spot: int):
-        """Removes a video at the given spot in the queue.
+        """Removes a video at the given spot in the playlist.
         
         Params:
         -------
@@ -322,18 +363,18 @@ class VideoController(commands.Cog):
         """
         player = self.get_player(ctx)
         try:
-            source = player.video_playlist.remove(spot)
+            removed = player.video_playlist.remove(spot)
         except IndexError:
             return await ctx.send(
-                f"There is no video at spot {spot} in the queue.", delete_after=10)
+                f"There is no video at spot {spot} in the playlist.", delete_after=10)
 
         await ctx.send(
-            f"Removed `{source.title}` from spot {spot} in the queue.", 
-            delete_after=10)    
+            f"Removed `{removed.title}` from spot {spot} in the playlist.", 
+            delete_after=10)
 
     @commands.hybrid_command(name='shuffle')
     async def _shuffle(self, ctx: commands.Context):
-        """Shuffles all videos in the queue.
+        """Shuffles all videos in the playlist.
         
         Params:
         -------

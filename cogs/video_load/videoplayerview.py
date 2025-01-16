@@ -4,15 +4,16 @@
 import discord
 
 from discord.ext import commands
+from .constants import emojis
 
 
 
-PAUSE = "<:pause:1328887225252970508>" 
-PLAY = "<:play:1328887026883498014>" 
-RESUME = "<:resume:1328887091094098043>" 
-STOP = "<:stop:1328887072328650804>"
-NEXT = "<:next:1328887052405833781>"
-PREV = "<:prev:1328887060807028786>"
+prev_emoji = emojis.get("prev")
+next_emoji = emojis.get("next")
+pause_emoji = emojis.get("pause")
+play_emoji = emojis.get("play")
+resume_emoji = emojis.get("resume")
+stop_emoji = emojis.get("stop")
 
 
 
@@ -22,7 +23,7 @@ class VideoPlayerView(discord.ui.View):
         self.bot = bot
         self.ctx = ctx
         
-    @discord.ui.button(emoji=PREV, style=discord.ButtonStyle.blurple)
+    @discord.ui.button(emoji=prev_emoji, style=discord.ButtonStyle.red)
     async def _prev(
         self,
         interaction: discord.Interaction,
@@ -30,7 +31,7 @@ class VideoPlayerView(discord.ui.View):
         await interaction.response.defer()
         await self.ctx.invoke(self.bot.get_command("previous"))
     
-    @discord.ui.button(emoji=PAUSE, style=discord.ButtonStyle.blurple)
+    @discord.ui.button(emoji=pause_emoji, style=discord.ButtonStyle.red)
     async def _pause(
         self,
         interaction: discord.Interaction,
@@ -38,10 +39,10 @@ class VideoPlayerView(discord.ui.View):
         await interaction.response.defer()
         await self.ctx.invoke(self.bot.get_command("pause"))
         
-        button.emoji = RESUME if self.ctx.voice_client.is_paused() else PAUSE
+        button.emoji = resume_emoji if self.ctx.voice_client.is_paused() else pause_emoji
         await interaction.message.edit(view=self)
     
-    @discord.ui.button(emoji=NEXT, style=discord.ButtonStyle.blurple)
+    @discord.ui.button(emoji=next_emoji, style=discord.ButtonStyle.red)
     async def _skip(
         self,
         interaction: discord.Interaction,
@@ -49,7 +50,7 @@ class VideoPlayerView(discord.ui.View):
         await interaction.response.defer()
         await self.ctx.invoke(self.bot.get_command("skip"))
     
-    @discord.ui.button(emoji=STOP, style=discord.ButtonStyle.blurple)
+    @discord.ui.button(emoji=stop_emoji, style=discord.ButtonStyle.red)
     async def _stop(
         self,
         interaction: discord.Interaction,

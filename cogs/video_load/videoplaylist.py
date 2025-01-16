@@ -1,8 +1,16 @@
+
+
+
 import asyncio 
 
 from random import randint
 from time import gmtime, strftime
+from .constants import emojis
 from .video import Video
+
+
+
+playlist_emoji = emojis.get("playlist")
 
 
 
@@ -11,9 +19,6 @@ class VideoNode:
         self.content = content
         self.prev = prev
         self.next = next
-
-    async def get_embed(self):
-        return self.content.get_embed()
 
     def __str__(self):
         return (f"**[{self.content['title']}]({self.content['web_url']})** |"
@@ -29,6 +34,8 @@ class VideoPlaylist:
         self.size = 0
         
         self.forward = True
+        self.loop_one = False
+        self.loop_all = False
         self.ready = asyncio.Event()
         
     async def _add_first(self, new_video):
@@ -66,20 +73,50 @@ class VideoPlaylist:
         
     def advance(self):
         print("advancing")
+        if self.loop_one:
+            print("replaying current")
+            self.ready.set()
+            return
+            
         if self.forward:
             self.move_to_next()
+        else:
+            self.move_to_prev()
 
     def move_to_next(self):
         if not self.now_playing.next:
             print("end of playlist")
-            self.ready.clear()
-            return
+            
+            if self.loop_all:
+                print("going to beginning")
+                self.now_playing = self.head
+                self.ready.set()
+            else:    
+                self.ready.clear()
+        else:
+            print(f"going forward from {self.now_playing}")
+            self.now_playing = self.now_playing.next
+            print(f"now at {self.now_playing}")
+            self.ready.set()
         
-        print(f"going forward from {self.now_playing}")
-        self.now_playing = self.now_playing.next
+    def move_to_prev(self):
+        if not self.now_playing.prev:
+            print("beginning of playlist")
+            
+            if self.loop_all:
+                print("going back to end")
+                self.now_playing = self.tail
+            else:
+                print("replaying first song")
+                self.now_playing = self.head
+            
+        else:
+            print(f"going backward from {self.now_playing}")
+            self.now_playing = self.now_playing.prev
+        
         print(f"now at {self.now_playing}")
         self.ready.set()
-    
+
     def get_upcoming(self):
         descriptions: list[str] = []
         for spot, node in enumerate(self, 1):
@@ -112,6 +149,7 @@ class VideoPlaylist:
         if not 1 <= spot <= self.size:
             raise IndexError("That spot does not exist in the playlist.")
         elif spot == 1:
+            removed = self.head
             self.head = self.head.next
             if self.head:
                 self.head.prev = None
@@ -119,6 +157,7 @@ class VideoPlaylist:
                 self.tail = None
                 
         elif spot == self.size:
+            removed = self.tail
             self.tail = self.tail.prev
             if self.tail:
                 self.tail.next = None
@@ -129,18 +168,18 @@ class VideoPlaylist:
             for i in range(spot - 1):
                 current = current.next
             
-            removed = current.content
+            removed = current
             prev = current.prev
             new_next = current.next
             prev.next = new_next
             new_next.prev = prev
             
-            return removed
-            
         self.size -= 1
         if self.size == 0:
             self.ready.clear()
-            
+        
+        return removed.content
+
     def cleanup(self):
         self.head = None
         self.tail = None
@@ -148,6 +187,8 @@ class VideoPlaylist:
         self.size = 0
         
         self.forward = True
+        self.loop_one = False
+        self.loop_all = False
         self.ready.clear()
         
     def __iter__(self):
@@ -159,4 +200,4 @@ class VideoPlaylist:
     def __str__(self):
         total_runtime = sum(node.content['duration'] for node in self)
         formatted_runtime = strftime('%H:%M:%S', gmtime(total_runtime))
-        return f"({self.size}) | Total runtime: `{formatted_runtime}`"
+        return f"{playlist_emoji} **Upcoming Videos**: ({self.size}) | Total runtime: `{formatted_runtime}`"

@@ -5,6 +5,7 @@ queue management, and embed creation.
 
 
 
+from .constants import emojis
 from .progress import ProgressBar
 from .video import Video
 from .videoplayer import VideoPlayer

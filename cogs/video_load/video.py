@@ -33,7 +33,7 @@ Key Features:
     Configuration dictionary for `yt-dlp`, specifying formats and options for video extraction.
 
 ### Dependencies:
-- **`asyncio`**: For asynchronous event handling and queue management.
+- **`asyncio`**: For asynchronous event handling.
 - **`datetime`**: For tracking time and formatting strings.
 - **`discord`**: For interacting with Discord APIs and sending embeds.
 - **`time`**: For string formatting with time fields.
@@ -41,21 +41,24 @@ Key Features:
     used to create reusable function arguments for asynchronous tasks.
 - **`pytube`**: For downloading and processing YouTube videos.
 - **`yt_dlp`**: For playlist management.
-- **`progress`**: For visual representing the progress a video
+- **`progress`**: For visual representing the progress a video.
 """
 
 
 
 import asyncio
-
 import discord
 import time
 
 from functools import partial
 from pytube import Playlist
 from yt_dlp import YoutubeDL
-
+from .constants import emojis
 from .progress import ProgressBar
+
+
+sound_low = emojis.get("sound_low")
+sound_on = emojis.get("sound_on")
 
 
 YTDL_FORMATS = {
@@ -280,15 +283,17 @@ class Video(discord.PCMVolumeTransformer):
         self.elapsed_time = elapsed_time
         elapsed_field = time.strftime('%H:%M:%S', time.gmtime(elapsed_time))
         duration_field = time.strftime('%H:%M:%S', time.gmtime(self.duration))
-        desc_field = (F"""`{elapsed_field}`|`{duration_field}`
+        desc_field = (f"""`{elapsed_field}`|`{duration_field}`
             **Requested by {(str(self.requester.mention))}**""")
 
-        current_progress = self.progress.display(elapsed_time)
+        current_progress = self.progress.get_progress(elapsed_time)
+        vol_emoji = sound_low if self.volume <= 0.30 else sound_on
+        volume_field = f"{vol_emoji}: {self.volume * 100}%"
+        
         now_playing_embed = discord.Embed(
             title=self.title, url=self.web_url,
-            description=(F"\n\n{current_progress}\n\n{desc_field}"),
-            color=discord.Color.red())
-
-        now_playing_embed.set_footer(text=F"Volume: {self.volume * 100}%")
+            description=(f"\n\n{current_progress}\n\n{desc_field}\n\n{volume_field}"),
+            color="#dd7c1f")
+        
         now_playing_embed.set_thumbnail(url=self.thumbnail)
         return now_playing_embed
