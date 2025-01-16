@@ -45,6 +45,14 @@ class BoardView(discord.ui.View):
         self.placement_board = board
         self.current: int = None
         self.fleet = fleet
+        
+        select = discord.ui.Select(
+            placeholder="Select a ship",
+            options=[discord.SelectOption(label=ship.name, value=str(i)) for i, ship in enumerate(self.fleet)],
+            row=0)
+        
+        select.callback = self._select_ship_option
+        self.add_item(select)
 
     async def _select_ship(self, interaction: discord.Interaction, ship: Ship):
         """Selects a ship to be placed. Occurs when the user selects the ship manually
@@ -64,9 +72,6 @@ class BoardView(discord.ui.View):
         embed = self.placement_board.get_ship_placement_embed(ship)
         await interaction.response.edit_message(embed=embed)
     
-    @discord.ui.select(
-        placeholder="Select a ship to place",
-        options=[discord.SelectOption(label=f"Ship {i}", value=str(i)) for i in range(1, 6)], row=0)
     async def _select_ship_option(
         self,
         interaction: discord.Interaction,
@@ -88,6 +93,19 @@ class BoardView(discord.ui.View):
         await self._select_ship(interaction, ship)
 
     async def _move_ship(self, interaction: discord.Interaction, dy=0, dx=0):
+        """Moves the ship in a given direction.
+        
+        Notifies the user if the resulting position would be invalid.
+        
+        Params:
+        -------
+            interaction: discord.Interaction
+                    The interaction for this context.
+            dy : int
+                The change in the y coordinate to move the ship.
+            dx : int
+                The change in the x coordinate to move the ship.
+        """
         if self.current is None:
             return await interaction.response.send_message("Select a ship first!", delete_after=5)
 
@@ -101,7 +119,7 @@ class BoardView(discord.ui.View):
         else:
             await interaction.response.defer()
 
-    @discord.ui.button(label="⬅️", style=discord.ButtonStyle.blurple, row=1)
+    @discord.ui.button(label="Move ⬅️", style=discord.ButtonStyle.blurple, row=1)
     async def _move_ship_left(  
         self,
         interaction: discord.Interaction,
@@ -109,7 +127,7 @@ class BoardView(discord.ui.View):
         """Moves the currently selected ship one step to the left if the move is valid."""
         await self._move_ship(interaction, dx=-1)
 
-    @discord.ui.button(label="⬆️", style=discord.ButtonStyle.blurple, row=1)
+    @discord.ui.button(label="Move ⬆️", style=discord.ButtonStyle.blurple, row=1)
     async def _move_ship_up(
         self,
         interaction: discord.Interaction,
@@ -117,7 +135,7 @@ class BoardView(discord.ui.View):
         """Moves the currently selected ship one step up if the move is valid."""
         await self._move_ship(interaction, dy=-1)
             
-    @discord.ui.button(label="➡️", style=discord.ButtonStyle.blurple, row=1)
+    @discord.ui.button(label="Move ➡️", style=discord.ButtonStyle.blurple, row=1)
     async def _move_ship_right(
         self,
         interaction: discord.Interaction,
@@ -125,7 +143,7 @@ class BoardView(discord.ui.View):
         """Moves the currently selected ship one step to the right if the move is valid."""
         await self._move_ship(interaction, dx=1)
 
-    @discord.ui.button(label="⬇️", style=discord.ButtonStyle.blurple, row=1)
+    @discord.ui.button(label="Move ⬇️", style=discord.ButtonStyle.blurple, row=1)
     async def _move_ship_down(
         self,
         interaction: discord.Interaction,
@@ -134,6 +152,17 @@ class BoardView(discord.ui.View):
         await self._move_ship(interaction, dy=1)
 
     async def _rotate_ship(self, interaction: discord.Interaction, direction: str):
+        """Rotates the ship in a given direction.
+        
+        Notifies the user if the resulting position would be invalid.
+        
+        Params:
+        -------
+            interaction: discord.Interaction
+                The interaction for this context.
+            direction : str
+                The direction for the ship to face.
+        """
         if self.current is None:
             return await interaction.response.send_message("Select a ship first!", delete_after=5)
 
@@ -147,7 +176,7 @@ class BoardView(discord.ui.View):
         else:
             await interaction.response.defer()
 
-    @discord.ui.button(label="Vertical 🔄️", style=discord.ButtonStyle.blurple, row=2)
+    @discord.ui.button(label="🔄️ Vertical", style=discord.ButtonStyle.blurple, row=2)
     async def _rotate_ship_vertical(
         self,
         interaction: discord.Interaction,
@@ -191,7 +220,7 @@ class BoardView(discord.ui.View):
 
         return False
 
-    @discord.ui.button(label="✅", style=discord.ButtonStyle.blurple, row=3)
+    @discord.ui.button(label="Confirm Current ✅", style=discord.ButtonStyle.blurple, row=3)
     async def _confirm_ship_placement(
         self,
         interaction: discord.Interaction,
@@ -208,7 +237,6 @@ class BoardView(discord.ui.View):
             return
 
         self.placement_board.confirm_ship(ship)
-        ## Get the next unconfirmed ship
         self.current = next((i for i, ship in enumerate(self.fleet) if not ship.confirmed), None)
         if self.current is not None:
             ship = self.fleet[self.current]
@@ -239,3 +267,18 @@ class BoardView(discord.ui.View):
 
         embed = self.placement_board.get_ship_placement_embed()
         await interaction.response.edit_message(embed=embed)
+        
+    @discord.ui.button(label="Clear All ❌", style=discord.ButtonStyle.danger, row=3)
+    async def _clear_all(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button):
+        """Clears the board and all ship positions."""
+        self.placement_board.clear_board()
+        
+        for ship in self.fleet:
+            self.placement_board.reset_ship(ship)
+
+        embed = self.placement_board.get_ship_placement_embed()
+        await interaction.response.edit_message(embed=embed)
+        await interaction.response.send_message("Reset the board.")
