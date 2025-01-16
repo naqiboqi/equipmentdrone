@@ -18,7 +18,6 @@ class Settings(commands.Cog):
         try:
             synced = await self.bot.tree.sync()
             print(f"Loaded {len(synced)} commands!")
-            print(f"Commands: \n {'\n'.join(synced)}")
             await ctx.message.add_reaction("✅")
         except Exception as e:
             print(e)
