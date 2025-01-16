@@ -71,7 +71,8 @@ Contains everything you need to know about the `discord.py` library
 #### To-Do
 -----------
 - [ ] Add seeking to media controls
+- [ ] Add looping and play previous to media controls
 - [ ] Host bot on a computer that is not my daily driver
 - [ ] Make the bot smarter when attacking in battleship
-- [ ] Add grid labels to the board in battleship
-- [ ] Don't hardcode bot messages
+- [X] Add grid labels to the board in battleship
+- [X] Don't hardcode bot messages
