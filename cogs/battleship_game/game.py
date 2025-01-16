@@ -117,8 +117,8 @@ class Game:
         player_2.set_ship_names(ship_names[player_2.country])
         self.country_message = await self.country_message.edit(view=None)
         
-        await sleep(5)
-        await ctx.send("Now check your DMs to place your ships.")
+        await sleep(2)
+        await ctx.send("Check your DMs to place your ships.")
         await player_1.choose_ship_placement(ctx)
         await player_1.send_board_states()
         await ctx.send(f"{player_1.member.mention} has finished placing their ships.",
@@ -134,9 +134,9 @@ class Game:
             player_2.random_place_ships(bot_player=True)
             await sleep(10)
         
-        self.bot_attack_message = await self.player_1.member.send(embed=self.player_2.attack_board.get_embed())
-        self.bot_defense_message = await self.player_1.member.send(embed=self.player_2.defense_board.get_embed())
-
+        await ctx.send(f"{player_2.member.mention} has finished placing their ships.",
+            delete_after=15)
+        
         await ctx.send(
             f"Game started between {self.player_1.member.mention} and "
             f"{self.player_2.member.mention}!")

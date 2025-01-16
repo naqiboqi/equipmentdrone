@@ -58,7 +58,6 @@ class CountryView(discord.ui.View):
         super().__init__(timeout=timeout)
         self.player_1 = player_1
         self.player_2 = player_2
-        print(ship_names)
 
     @discord.ui.select(
         placeholder="Select a country",

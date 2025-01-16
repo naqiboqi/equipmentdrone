@@ -42,6 +42,7 @@ import discord
 import random
 
 from typing import Optional
+from .constants import emojis
 from .ship import Ship
 
 
@@ -167,9 +168,38 @@ class Board():
 
     def __str__(self):
         """Returns a string representation of the board."""
-        board = ""
-        for row in self.grid:
-            board += "|".join(spot for spot in row) + "\n"
+        numbers = [
+            emojis.get("one_border"),
+            emojis.get("two_border"),
+            emojis.get("three_border"),
+            emojis.get("four_border"),
+            emojis.get("five_border"),
+            emojis.get("six_border"),
+            emojis.get("seven_border"),
+            emojis.get("eight_border"),
+            emojis.get("nine_border"),
+            emojis.get("ten_border"),
+        ]
+        
+        letters = [
+            emojis.get("board_a"),
+            emojis.get("board_b"),
+            emojis.get("board_c"),
+            emojis.get("board_d"),
+            emojis.get("board_e"),
+            emojis.get("board_f"),
+            emojis.get("board_g"),
+            emojis.get("board_h"),
+            emojis.get("board_i"),
+            emojis.get("board_j")
+        ]
+        
+        board = f"{emojis.get("board_tl")}{''.join(numbers)}{emojis.get("board_tr")}\n"
+        for i in range(self.size):
+            row = self.grid[i]
+            board += f"{letters[i]}{''.join(spot for spot in row)}{letters[i]}\n"
+        
+        board += f"{emojis.get("board_bl")}{''.join(numbers)}{emojis.get("board_br")}\n"
         return board
 
 
@@ -347,7 +377,7 @@ class DefenseBoard(Board):
         """
         embed = discord.Embed(
             title="Place your ships!",
-            description=f"```{self.__str__()}```",
+            description=f"{self}",
             color=discord.Color.fuchsia(),
         )
 
@@ -365,7 +395,7 @@ class DefenseBoard(Board):
         """Returns an embed that shows the player's finalized ship placements on the board."""
         embed = discord.Embed(
             title="These are your ships. Be sure to guard them with your life!",
-            description=f"```{self.__str__()}```",
+            description=f"{self}",
             color=discord.Color.dark_magenta()
         )
 
@@ -398,7 +428,7 @@ class AttackBoard(Board):
         """
         embed = discord.Embed(
             title="These are your hits and misses. Try not to miss too much!",
-            description=f"```{self.__str__()}```",
+            description=f"{self}",
             color=discord.Color.red()
         )
 
