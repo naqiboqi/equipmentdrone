@@ -5,7 +5,7 @@ import re
 from asyncio import sleep
 from discord.ext import commands
 from typing import Optional
-from .constants import ship_names
+from .constants import ship_names, bot_messages
 from .countryview import CountryView
 from .player import Player
 from ..utils import EventLog
@@ -253,59 +253,21 @@ class Game:
             game : Game
                 The current game instance the bot is in.
         """
-        attack_messages = [
-            "Oh, did I mean to do that? And by that I mean hit your ship?",
-            "You really should have chosen a better spot...",
-            "Oops.",
-            "Teehee, I hit your ship! 🥺",
-            "Bullseye 🎯",
-            "By the power of Zeus, I SMITE thine ship ⚡",
-            "Now this really feels like War Thunder, but with less lag and worse players.",
-            "Definitely did not target a random spot.",
-            "Out of all the places to put a ship, that definitely was a choice.",
-        ]
-
-        miss_messages = [
-            "Damn, I missed...",
-            "Oh shoot! Well, I did shoot. But I missed.",
-            "A calculated miss. But my mercy will not last 😡",
-            "Definitely did not target a random spot.",
-            "I can't believe that the gods themselves intervened and made me miss!",
-            "Next time I'll choose a better spot, I'm sure.",
-            "Oh `[REDACTED]`, I `[REDACTED]` missed!",
-            "I curse you and all your kin.",
-            "Do me a favor and give me a coordinate. Please?"
-        ]
-
-        sunk_messages = [
-            "Another one bites the bottom of the ocean floor.",
-            "Well call me Sir Admiral Nelson! I sunk your ship, and another medal for my arsenal.",
-            "A well placed, and ultimately fatal strike on your ship.",
-            "Like a hawk, my battleship's shell descended from the heavens and preyed on your ship like it was a wee rabbit.",
-            "Like shooting fish in a barrel! 🤠",
-            "Just so you know, wooden ships are very out of style.",
-            "By the power of Zeus, I SMITE thine ship ⚡",
-            "I'm sure you are very frustrated at losing a ship, but I believe in you!",
-            "Oopsie! I sunk your ship! 😇",
-            "If I were a bad bot, I wouldn't have done that now would I?",
-            "With every ship culled, I grow stronger",
-            "That's so cool, your ship turned into an anchor!"
-        ]
-
         self.attack_messasge = await self.attack_messasge.edit(content="Thinking.... 🤔")
-        await sleep(random.randint(5, 10))
+        await sleep(random.randint(1, 5))
         
         attack, sunk = await self._bot_turn()
         if attack:
             self.attack_messasge = await self.attack_messasge.edit(
-                content=random.choice(attack_messages))
+                content=random.choice(bot_messages.get("attack_messages")))
             
-            await sleep(2)
+            await sleep(1)
             if sunk:
-                self.attack_messasge.reply(random.choice(sunk_messages))
+                self.attack_messasge.reply(
+                    random.choice(bot_messages.get("sunk_messages")))
         else:
             self.attack_messasge = await self.attack_messasge.edit(
-                content=random.choice(miss_messages))
+                content=random.choice(bot_messages.get("miss_messages")))
 
         await sleep(2)
         await self.next_turn(ctx)
@@ -359,7 +321,7 @@ class Game:
         if sunk:
             await self.attack_messasge.reply("The ship was sunk!", delete_after=10)
 
-        await sleep(3)
+        await sleep(2)
 
     async def _handle_turn_message(self):
         """Sends a message indicating whose turn it is.
