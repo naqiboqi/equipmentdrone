@@ -45,7 +45,7 @@ class JsonLoader:
     _cache: dict[str, dict] = {}
     
     @classmethod
-    def load_json(cls, filename: str):
+    def load_json(cls, filename: str) -> dict[str, str]:
         """
         Loads JSON data from the specified file and caches it for future use.
 
@@ -62,7 +62,6 @@ class JsonLoader:
             try:
                 with open(filename, "r") as f:
                     cls._cache[filename] = json.load(f)
-                    print("opened")
             except FileNotFoundError:
                 cls._cache[filename] = {}
                 print(f"Unable to find file")
