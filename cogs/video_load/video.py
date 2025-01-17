@@ -59,6 +59,10 @@ from .progress import ProgressBar
 
 sound_low = emojis.get("sound_low")
 sound_on = emojis.get("sound_on")
+playing = emojis.get("now_playing")
+loop_one = emojis.get("repeat_one")
+loop_all = emojis.get("repeat_all")
+loop_none = emojis.get("repeat_none")
 
 
 YTDL_FORMATS = {
@@ -139,12 +143,13 @@ class Video(discord.PCMVolumeTransformer):
         self.duration: int = duration
         self.requester: discord.member.Member = requester
         self.title: str = data.get('title')
+        self.uploader = data.get('uploader')
         self.web_url: str = data.get('webpage_url')
         self.video_id: str = self.web_url.split("=", 1)[1]
         self.thumbnail: str = f"https://i1.ytimg.com/vi/{self.video_id}/hqdefault.jpg"
-
+        
         self.elapsed_time = 0.00
-        self.seeked_time = 0.00
+        self.seek_time = 0.00
         self.start_time = 0.00
         self.progress: ProgressBar = None
 
@@ -231,33 +236,6 @@ class Video(discord.PCMVolumeTransformer):
             requester=ctx.author,
             duration=data['duration'])
 
-    @classmethod
-    async def prepare_stream(
-        cls,
-        data: "Video",
-        *,
-        loop: asyncio.AbstractEventLoop):
-        """Prepares a video stream for playing, and returns it.
-
-        Params:
-        -------
-        data: Video
-            The video data object to prepare for streaming.
-        loop: asyncio.AbstractEventLoop
-            The event loop to use for asynchronous operations. If not provided, 
-            the default event loop for the current thread will be used.
-        """
-        loop = loop or asyncio.get_event_loop()
-        requester = data['requester']
-        duration = data['duration']
-
-        to_run = partial(ytdl.extract_info, url=data['webpage_url'], download=False)
-        data = await loop.run_in_executor(None, to_run)
-
-        return cls(
-            discord.FFmpegPCMAudio(data['url']), data=data,
-            requester=requester, duration=duration)
-
     def start(self, start_time: float, volume: float):
         """Initializes the settings for the video source object.
 
@@ -272,7 +250,7 @@ class Video(discord.PCMVolumeTransformer):
         self.start_time = start_time
         self.volume = volume
 
-    def get_embed(self, elapsed_time: float=0.00):
+    def get_embed(self, elapsed_time: float=0.00, loop: str=None):
         """Returns an embed containing the details of the video source object.
 
         Params:
@@ -281,19 +259,43 @@ class Video(discord.PCMVolumeTransformer):
             The elapsed time of the video, in seconds.
         """
         self.elapsed_time = elapsed_time
-        elapsed_field = time.strftime('%H:%M:%S', time.gmtime(elapsed_time))
-        duration_field = time.strftime('%H:%M:%S', time.gmtime(self.duration))
-        desc_field = (f"""`{elapsed_field}`|`{duration_field}`
-            **Requested by {(str(self.requester.mention))}**""")
+        elapsed = time.strftime('%H:%M:%S', time.gmtime(elapsed_time))
+        duration = time.strftime('%H:%M:%S', time.gmtime(self.duration))
+        time_field = f"`{elapsed}|{duration}`"
 
         current_progress = self.progress.get_progress(elapsed_time)
-        vol_emoji = sound_low if self.volume <= 0.30 else sound_on
+        vol_emoji = sound_low if self.volume <= 0.40 else sound_on
         volume_field = f"{vol_emoji}: {self.volume * 100}%"
         
-        now_playing_embed = discord.Embed(
-            title=self.title, url=self.web_url,
-            description=(f"\n\n{current_progress}\n\n{desc_field}\n\n{volume_field}"),
-            color="#dd7c1f")
+        if loop == "all":
+            loop_emoji = loop_all
+        elif loop == "one":
+            loop_emoji = loop_one
+        else:
+            loop_emoji = loop_none
         
+        now_playing_embed = discord.Embed(
+            title=f"{emojis.get("now_playing")}  NOW PLAYING",
+            description=f"""
+
+            [{self.title}]({self.web_url}) **by** `{self.uploader}`
+            
+            {time_field}
+            {current_progress}
+            """,
+            color=discord.Color.from_str("#dd7c1f"))
+        
+        now_playing_embed.add_field(
+            name=f"** **", 
+            value=f"Volume: {volume_field}", 
+            inline=True)
+        
+        now_playing_embed.add_field(
+            name=f"** **", 
+            value=f"Looping: {loop_emoji}", 
+            inline=True)
+
         now_playing_embed.set_thumbnail(url=self.thumbnail)
+        now_playing_embed.set_footer(text=f"Requested by: {self.requester.name}")
+        
         return now_playing_embed
