@@ -49,7 +49,7 @@ class ProgressBar():
         """
         
         if self.is_complete(elapsed_time):
-            string_bar = play_emoji + elapsed_emoji * (self.size - 1) + circle_emoji
+            string_bar = play_emoji + elapsed_emoji * self.size + circle_emoji
             return string_bar
         else:
             percentage_elapsed = elapsed_time / self.vid_length
