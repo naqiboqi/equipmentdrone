@@ -197,12 +197,12 @@ class Board():
             emojis.get("board_j")
         ]
         
-        board = f"{emojis.get('board_tl')}{''.join(numbers)}{emojis.get('board_tr')}\n"
+        board = f"{emojis.get("board_tl")}{''.join(numbers)}{emojis.get("board_tr")}\n"
         for i in range(self.size):
             row = self.grid[i]
             board += f"{letters[i]}{''.join(spot for spot in row)}{letters[i]}\n"
         
-        board += f"{emojis.get('board_bl')}{''.join(numbers)}{emojis.get('board_br')}\n"
+        board += f"{emojis.get("board_bl")}{''.join(numbers)}{emojis.get("board_br")}\n"
         return board
 
 
@@ -217,12 +217,6 @@ class DefenseBoard(Board):
     """
     def __init__(self):
         super().__init__(size=10)
-        
-    def reset_ship(self, ship: Ship):
-        ship.confirmed = False
-        ship.current_ship = False
-        ship.placed_before = False
-        ship.locs = []
 
     def first_placement(self, ship: Ship):
         """Places the ship on a random valid location on the board.
@@ -249,7 +243,6 @@ class DefenseBoard(Board):
             bot_player : bool
                 If the placing player is a bot or not.
         """
-        self.clear_board()
         for ship in fleet:
             ship.locs = []
             ship.placed_before = False
@@ -373,6 +366,13 @@ class DefenseBoard(Board):
             self.grid[y][x] = SHIP_NOT_CONFIRMED
 
         ship.current_ship = False
+        
+    def reset_ship(self, ship: Ship):
+        """Resets the positions of the ship."""
+        ship.placed_before = False
+        ship.confirmed = False
+        ship.current_ship = False
+        ship.locs = []
 
     def get_ship_placement_embed(self, current_ship: Optional[Ship]=None):
         """Returns an embed showing the currently selected ship and

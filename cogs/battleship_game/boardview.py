@@ -72,10 +72,7 @@ class BoardView(discord.ui.View):
         embed = self.placement_board.get_ship_placement_embed(ship)
         await interaction.response.edit_message(embed=embed)
     
-    async def _select_ship_option(
-        self,
-        interaction: discord.Interaction,
-        select: discord.ui.Select):
+    async def _select_ship_option(self, interaction: discord.Interaction):
         """Allows the user to select a ship to place from a dropdown menu.
         
         If the ship is being selected for the first time, it will be randomly placed
@@ -88,7 +85,7 @@ class BoardView(discord.ui.View):
             ship = self.fleet[self.current]
             self.placement_board.deselect_ship(ship)
 
-        self.current = int(select.values[0]) - 1
+        self.current = int(interaction.data["values"][0])
         ship = self.fleet[self.current]
         await self._select_ship(interaction, ship)
 
@@ -244,7 +241,7 @@ class BoardView(discord.ui.View):
         else:
             embed = await self.placement_board.get_ship_placement_embed()
             await interaction.response.edit_message(embed=embed)
-            await interaction.response.send_message("All ships have been placed!")
+            await interaction.followup.send("All ships have been placed!")
 
     @discord.ui.button(label="Confirm All ✅", style=discord.ButtonStyle.blurple, row=3)
     async def _confirm_all(
@@ -281,4 +278,4 @@ class BoardView(discord.ui.View):
 
         embed = self.placement_board.get_ship_placement_embed()
         await interaction.response.edit_message(embed=embed)
-        await interaction.response.send_message("Reset the board.")
+        await interaction.followup.send("Reset the board.")
