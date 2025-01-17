@@ -51,7 +51,7 @@ import discord
 
 from discord.ext import commands
 from typing import Optional
-from .video_load import VideoPlayer
+from .video_load import emojis, VideoPlayer
 from .video_load import LYRICS_URL
 from .utils import PageView
 
@@ -316,38 +316,40 @@ class VideoController(commands.Cog):
 
         player = self.get_player(ctx)
         player.volume = vol / 100
-        await ctx.send(f"Set the volume to `{vol}`%.", delete_after=10)
+        await ctx.send(f"{emojis.get("sound_on")}Set the volume to `{vol}`%.", delete_after=10)
         
     @commands.hybrid_command(name="loopall")
     async def _loop_all(self, ctx: commands.Context):
+        """Loops the entire playlist.
+        
+        Disables looping the current video, (`loop_one`), unless the playlist has only one video.
+        """
         vc = ctx.voice_client
         if not vc or not vc.is_connected():
             return await ctx.send(
                 "I am not currently connected to voice!", delete_after=10)
             
         player = self.get_player(ctx)
+        loop = player.video_playlist.set_loop_all()
         
-        loop = player.video_playlist.loop_all
-        player.video_playlist.loop_all = not loop
-        player.video_playlist.loop_one = False
-        
-        message = "Now looping all" if not loop else "Stopped looping"
+        message = "Now looping all" if loop else "Stopped looping"
         await ctx.send(message)
     
     @commands.hybrid_command(name="loopone")
     async def _loop_one(self, ctx: commands.Context):
+        """Loops the currently playing video.
+        
+        Disables looping the entire playlist, (`loop_all`), unless the playlist has only one video.
+        """
         vc = ctx.voice_client
         if not vc or not vc.is_connected():
             return await ctx.send(
                 "I am not currently connected to voice!", delete_after=10)
             
         player = self.get_player(ctx)
+        loop = player.video_playlist.set_loop_one()
         
-        loop = player.video_playlist.loop_one
-        player.video_playlist.loop_one = not loop
-        player.video_playlist.loop_all = False
-        
-        message = "Now looping the current video" if not loop else "Stopped looping"
+        message = "Now looping the current video" if loop else "Stopped looping"
         await ctx.send(message)
         
     @commands.hybrid_command(name='removevideo', aliases=['rremove'])

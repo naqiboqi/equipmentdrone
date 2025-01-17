@@ -124,37 +124,24 @@ class VideoPlayer:
             if not isinstance(source, Video):
                 print(f"Error: The next video is not valid: {source}")
                 continue
+            
+            new_source = await Video.get_source(
+                ctx=self.ctx, search=source.title, 
+                loop=self.bot.loop, 
+                download=False, 
+                seek_time=source.seek_time)
+            await self.video_playlist.replace_current(new_source)
 
             self.current = source
-            start_time = time.perf_counter() - source.seeked_time
+            start_time = time.perf_counter() - source.seek_time
             source.start(start_time, self.volume)
-
-            if self.current is not None and isinstance(self.current, discord.AudioSource):
-                print(f"playing {self.current.title}")
-                self.guild.voice_client.play(self.current, after=self.handle_after_play)
-            else:
-                print(f"Error: Invalid audio source {self.current}")
+            self.guild.voice_client.play(source, after=self.video_playlist.advance())
 
             await self.show_player_details()
             await self.timer(self.current.start_time)
-            print("timer done!")
             
-            if not self.video_playlist.loop_one:
-                source.cleanup()
-                
+            source.cleanup()
             self.current = None
-
-    def handle_after_play(self, error):
-        if error:
-            print(f"Error playing video {error}")
-            
-        if self.video_playlist.loop_one:
-            print("replaying")
-            self.guild.voice_client.play(self.current)
-        else:
-            print("advancing")
-            self.video_playlist.advance()
-        
 
     async def timer(self, start_time: float):
         """Keeps track of the video's runtime, and calls update_player_details()
@@ -196,7 +183,14 @@ class VideoPlayer:
             elapsed_time : float
                 The elapsed time of the video, in seconds.
         """
-        now_playing_embed = self.current.get_embed(elapsed_time=elapsed_time)
+        if self.video_playlist.loop_all:
+            loop = "all"
+        elif self.video_playlist.loop_one:
+            loop = "one"
+        else:
+            loop = None
+        
+        now_playing_embed = self.current.get_embed(elapsed_time=elapsed_time, loop=loop)
 
         try:
             self.now_playing_message = await self.now_playing_message.edit(embed=now_playing_embed)

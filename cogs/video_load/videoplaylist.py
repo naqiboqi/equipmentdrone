@@ -21,6 +21,7 @@ class VideoNode:
         self.next = next
 
     def __str__(self):
+        """Returns a string representation of the video."""
         return (f"**[{self.content['title']}]({self.content['web_url']})** |"
             f"`{strftime('%H:%M:%S', gmtime(self.content['duration']))}`")
 
@@ -38,13 +39,39 @@ class VideoPlaylist:
         self.loop_all = False
         self.ready = asyncio.Event()
         
+    def cleanup(self):
+        self.head = None
+        self.tail = None
+        self.now_playing = None
+        self.size = 0
+        
+        self.forward = True
+        self.loop_one = False
+        self.loop_all = False
+        self.ready.clear()
+        
+    def set_loop_one(self):
+        self.loop_all = False
+        self.loop_one = not self.loop_one
+        
+        if self.now_playing:
+            self.ready.set()
+            
+        return self.loop_one
+    
+    def set_loop_all(self):
+        self.loop_one = False
+        self.loop_all = not self.loop_all
+
+        return self.loop_all
+
     async def _add_first(self, new_video):
         self.head = new_video
         self.tail = new_video
         self.now_playing = new_video
         self.ready.set()
 
-    async def add_to_end(self, video):
+    async def add_to_end(self, video: Video):
         new_video = VideoNode(video)
 
         if not self.head:
@@ -60,7 +87,7 @@ class VideoPlaylist:
             
         self.ready.set()
         
-    async def add_to_front(self, video):
+    async def add_to_front(self, video: Video):
         new_video = VideoNode(video)
         if not self.head:
             await self._add_first(new_video)
@@ -72,34 +99,42 @@ class VideoPlaylist:
         self.size += 1
         
     def advance(self):
-        print("advancing")
-        if self.loop_one:
-            print("replaying current")
+        """Advances to next video to play.
+        
+        If playing the previous, goes backwards and resets `self.forward`
+        """
+        if self.forward:
+            self.move_forward()
+        else:
+            self.move_backward()
+
+        self.forward = True
+
+    def move_forward(self):
+        """Moves to the next video in the playlist and sets it as current.
+        
+        If the player is looping the current video, replays it.
+        
+        If the player is looping the whole playlist and we are at the end,
+        starts from the video.
+        """
+        if self.loop_one and self.now_playing:
             self.ready.set()
             return
-            
-        if self.forward:
-            self.move_to_next()
-        else:
-            self.move_to_prev()
-
-    def move_to_next(self):
+        
         if not self.now_playing.next:
-            print("end of playlist")
-            
             if self.loop_all:
-                print("going to beginning")
                 self.now_playing = self.head
                 self.ready.set()
             else:    
                 self.ready.clear()
-        else:
-            print(f"going forward from {self.now_playing}")
-            self.now_playing = self.now_playing.next
-            print(f"now at {self.now_playing}")
-            self.ready.set()
+                
+            return
+
+        self.now_playing = self.now_playing.next
+        self.ready.set()
         
-    def move_to_prev(self):
+    def backward(self):
         if not self.now_playing.prev:
             print("beginning of playlist")
             
@@ -116,14 +151,26 @@ class VideoPlaylist:
         
         print(f"now at {self.now_playing}")
         self.ready.set()
+        
+    async def replace_current(self, video: Video):
+        next = self.now_playing.next
+        prev = self.now_playing.prev
+        self.now_playing = VideoNode(video, prev, next)
+        
+        # if this is the head
+        if not self.now_playing.prev:
+            self.head = self.now_playing
+            print("is head")
+        else:
+            prev.next = self.now_playing
+        
+        # if this is the tail
+        if not self.now_playing.next:
+            self.tail = self.now_playing
+            print("is tail")
+        else:
+            next.prev = self.now_playing
 
-    def get_upcoming(self):
-        descriptions: list[str] = []
-        for spot, node in enumerate(self, 1):
-            descriptions.append(f"{spot}. {node}")
-
-        return descriptions
-    
     def shuffle(self):
         if not self.head or self.head == self.tail:
             return
@@ -179,17 +226,14 @@ class VideoPlaylist:
             self.ready.clear()
         
         return removed.content
-
-    def cleanup(self):
-        self.head = None
-        self.tail = None
-        self.now_playing = None
-        self.size = 0
         
-        self.forward = True
-        self.loop_one = False
-        self.loop_all = False
-        self.ready.clear()
+    def get_upcoming(self):
+        """Returns a numbered list of upcoming videos with their descriptions."""
+        descriptions: list[str] = []
+        for spot, node in enumerate(self, 1):
+            descriptions.append(f"{spot}. {node}")
+
+        return descriptions
         
     def __iter__(self):
         current = self.head
@@ -200,4 +244,4 @@ class VideoPlaylist:
     def __str__(self):
         total_runtime = sum(node.content['duration'] for node in self)
         formatted_runtime = strftime('%H:%M:%S', gmtime(total_runtime))
-        return f"{playlist_emoji} **Upcoming Videos**: ({self.size}) | Total runtime: `{formatted_runtime}`"
+        return f"**Upcoming Videos**: | Total runtime: {formatted_runtime}"
