@@ -40,7 +40,7 @@ class JsonLoader:
 
     Attributes:
     -----------
-        _cache : dict[str : dict]
+        _cache : dict[str, dict]
             Stores the cached JSON data.
     """
     _cache: dict[str, dict] = {}
@@ -70,7 +70,7 @@ class JsonLoader:
             except json.JSONDecodeError:
                 cls._cache[filename] = {}
                 print(f"Unable to load file")
-                
+
         return cls._cache[filename]
 
     @classmethod
@@ -79,7 +79,8 @@ class JsonLoader:
         Clears the cache for a specific file or clears the entire cache if no filename is provided.
 
         Params:
-            filename : str: The filename for which the cache should be cleared. 
+            filename : str
+                The filename for which the cache should be cleared. 
                 If no filename is provided, all cache data is cleared.
         """
         if filename:

@@ -32,10 +32,14 @@ class Event():
     
     Attributes:
     -----------
-        `event_id` (int): Unique ID for each `event`.
-        `participants` (list[Player]): Users involved in the `event`.
-        `event_type` (str): Type of `event`, used for the string representation.
-        `event` (list[tuple[int, int]]|None): Details of the `event` (coordinates).
+        event_id : int
+            Unique ID for each `event`.
+        partipants : list
+            Users involved in the `event`.
+        event_type : str
+            Type of event.
+        event : list[tuple[int, int]]
+            Details of the `event` (coordinates).
     """
     event_counter = 1
 
@@ -75,7 +79,7 @@ class Event():
             "finished_game" : f"`{attacker.member.name}` won the game against"
                 f" `{defender.member.name}`.",
 
-            "next_turn" : f"It is `{attacker.member.name}'s` turn.",
+            "next_turn" : f"It is `{attacker.member.name}'s` turn."
         }
 
         return f"{self.event_id}) {event_descriptions.get(self.event_type, 'Unknown event')}"
@@ -88,7 +92,8 @@ class EventLog():
     
     Attributes:
     -----------
-        `events` (list[Event]): Stored events.
+        events : list[Event]
+            The stored events.
     """
     def __init__(self):
         self.events: list[Event] = []
@@ -103,10 +108,12 @@ class EventLog():
         
         Params:
         -------
-            `event_id` (int): Unique ID for each `event`.
-            `participants` (list[Player]): Users involved in the `event`.
-            `event_type` (str): Type of `event`, used for the string representation.
-            `event` (list[tuple[int, int]]|None): Details of the `event`.
+            participants : list
+                Users involved in the `event`.
+            event_type : str
+                Type of `event`, used for the string representation.
+            event : list[tuple[int, int]]
+                Details of the `event`.
         """
         event = Event(participants, event_type, event)
         self.events.append(event)
