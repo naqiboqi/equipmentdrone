@@ -39,9 +39,10 @@ and detailed playback embeds.
 ### Dependencies:
 - **`aiohttp`**: For making GET requests to `some-random-api`.
 - **`discord`**: For interacting with Discord APIs and sending embeds.
-- **`typing`**: For type hinting and function signatures.
 - **`discord.ext`**: For Discord bot command usage.
+- **`typing`**: For type hinting and function signatures.
 - **`videoplayer`**: For playing queued videos.
+- **`utils`**: For generating interactive embed pages.
 """
 
 
@@ -271,11 +272,10 @@ class VideoController(commands.Cog):
             return await ctx.send(
                 "I am not currently playing anything!", delete_after=10)
 
-        await ctx.send("Placeholder")
-        # player = self.get_player(ctx)
-        # player.video_playlist.forward = False
-        # vc.stop()
-        # await ctx.send("Going to previous video.", delete_after=10)
+        player = self.get_player(ctx)
+        player.video_playlist.forward = False
+        vc.stop()
+        await ctx.send("Going to previous video.", delete_after=10)
 
     @commands.hybrid_command(name='stop')
     async def _stop(self, ctx: commands.Context):
