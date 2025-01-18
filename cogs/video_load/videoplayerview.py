@@ -1,3 +1,30 @@
+"""
+This module defines the `VideoPlayerView` class, which provides an interactive 
+Discord UI View for controlling a video player. It enables users to interact with the 
+bot through buttons for common media playback actions such as play, pause, skip, and stop.
+
+Key Features:
+- **Interactive Media Controls**:
+    - Stop playback.
+    - Navigate to the previous or next video.
+    - Pause or resume playback.
+    - Loop the current video.
+
+- **Integration with Bot Commands**:
+    - Each button invokes a corresponding bot command.
+    - Commands are executed in the context of the active `commands.Context`.
+
+### Classes:
+- **`VideoPlayerView`**:
+    Represents the interactive UI for video player controls. Provides:
+    - Button elements for common media playback actions.
+    - Integration with Discord bot commands for seamless functionality.
+
+### Dependencies:
+- **`discord`**: Provides UI elements and bot interaction capabilities.
+- **`discord.ext.commands`**: Enables integration with bot commands.
+- **`constants`**: Supplies emoji references for button icons.
+"""
 
 
 

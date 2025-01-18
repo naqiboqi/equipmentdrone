@@ -33,10 +33,20 @@ class PageView(discord.ui.View):
     
     Attributes:
     -----------
-        `pages` (list[discord.Embed]): The embed pages containing the stored items.
-        `page_num` (int): The current page index.
+        title : str:
+            The title of the embed.
+        items : list[str]
+            The items used to generate the pages.
+        max_items_per_page : int
+            The maximum amount of items to display in one embed page.
+        timeout : int
+            The timeout for the page buttons, after which they are disabled.
+        pages : list[discord.Embed] 
+            The embed pages containing the stored items.
+        page_num : int
+            The current page index.
     """
-    def __init__(self, title: str, items: list[str], max_items_per_page: int=20, *, timeout=180):
+    def __init__(self, title: str, items: list[str], max_items_per_page: int=20, *, timeout: int=180):
         super().__init__(timeout=timeout)
         self.title = title
         self.items = items
@@ -46,6 +56,7 @@ class PageView(discord.ui.View):
         self.pages = self._generate_pages()
         
     def _generate_pages(self):
+        """Returns a list of embed pages that can be interacted with by using the `next` and `prev` buttons."""
         pages_content = [
             self.items[i:i + self.max_items_per_page]
             for i in range(0, len(self.items), self.max_items_per_page)]
@@ -69,12 +80,19 @@ class PageView(discord.ui.View):
 
         return pages
     
-    def _update_buttons(self):
+    def _update_buttons(self, interaction: discord.Interaction):
+        """Updates the view's buttons based on the current page.
+        
+        Disables the `next` button when at the last page,
+        and the `prev` button when at the first page.
+        """
         disable_prev = self.page_num == 0
         self._previous_button.disabled = disable_prev
         
         disable_next = self.page_num == (len(self.pages) - 1)
         self._next_button.disabled = disable_next
+        
+        interaction.message.edit(view=self)
         
     @discord.ui.button(label="Previous", style=discord.ButtonStyle.blurple)
     async def _previous_button(
@@ -86,8 +104,10 @@ class PageView(discord.ui.View):
 
         Params:
         -------
-            `interaction` (Interaction): The interaction that triggered the `button`.
-            `button` (Button): The button object.
+            interaction : discord.Interaction
+                The interaction that triggered the button.
+            button : Button
+                The button object.
         """
         if self.page_num > 0:
             self.page_num -= 1
@@ -95,7 +115,7 @@ class PageView(discord.ui.View):
         else:
             await interaction.response.defer()
 
-        self._update_buttons()
+        self._update_buttons(interaction)
 
     @discord.ui.button(label="Next", style=discord.ButtonStyle.blurple)
     async def _next_button(
@@ -107,8 +127,10 @@ class PageView(discord.ui.View):
 
         Params:
         -------
-            `interaction` (Interaction): The interaction that triggered the `button`.
-            `button` (Button): The button object.
+            interaction : discord.Interaction
+                The interaction that triggered the button.
+            button : Button
+                The button object.
         """
         if self.page_num < len(self.pages) - 1:
             self.page_num += 1
@@ -116,4 +138,4 @@ class PageView(discord.ui.View):
         else:
             await interaction.response.defer()
 
-        self._update_buttons()
+        self._update_buttons(interaction)

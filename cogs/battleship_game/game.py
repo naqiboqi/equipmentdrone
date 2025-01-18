@@ -76,7 +76,7 @@ class Game:
 
         Params:
         -------
-            participants: list[Player] 
+            participants : list[Player] 
                 The players involved in the event.
             event_type : str
                 A tag to represent the type of the event.
@@ -101,7 +101,7 @@ class Game:
             color=discord.Color.blue()
         )
 
-        view = CountryView(player_1, player_2)
+        view = CountryView(player_1, player_2, timeout=300)
         self.country_message = await ctx.send(embed=embed, view=view)
 
         if self.bot_player:
@@ -175,7 +175,6 @@ class Game:
 
         pattern = r'^[a-jA-J](1[0-9]|[1-9])$'
         if re.match(pattern, move):
-            # Add 1 from y and x coords for 0-indexing
             y, x = char_to_nums[move[0].upper()], int(move[1:]) - 1
             target = player.attack_board.grid[y][x]
 
@@ -248,7 +247,7 @@ class Game:
         
         Params:
         -------
-            ctx: commands.Context
+            ctx : commands.Context
                 The current context associated with a command.
             game : Game
                 The current game instance the bot is in.
@@ -256,8 +255,8 @@ class Game:
         self.attack_messasge = await self.attack_messasge.edit(content="Thinking.... 🤔")
         await sleep(random.randint(1, 5))
         
-        attack, sunk = await self._bot_turn()
-        if attack:
+        hit, sunk = await self._bot_turn()
+        if hit:
             self.attack_messasge = await self.attack_messasge.edit(
                 content=random.choice(bot_messages.get("attack_messages")))
             
@@ -278,9 +277,9 @@ class Game:
         Params:
         -------
             ctx : commands.Context
-                The current context associated with a command
+                The current context associated with a command.
             game : Game
-                The game instance to progress
+                The game instance to progress.
         """
         await self.player_1.update_board_states()
 
@@ -303,9 +302,12 @@ class Game:
         """Sends a message indicating the last attack's outcome.
         
         Params:
-            `game` (Game): The game instance
-            `attack` (bool): Whether or not the attack was successful
-            `sunk` (bool): Whether or not the attacked `ship` (if any) was sunk
+            game : Game
+                The game instance.
+            attack : bool
+                Whether or not the attack was successful.
+            sunk : bool
+                Whether or not the attacked `ship` (if any) was sunk.
         """
         if attack:
             message = (
