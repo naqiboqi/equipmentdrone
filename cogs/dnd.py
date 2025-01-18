@@ -76,7 +76,7 @@ class DnD(commands.Cog):
         dice = Dice(num_sides)
         view = DiceView(dice, num_rolls)
 
-        embed = dice.create_roll_embed(num_rolls)
+        embed = dice.get_embed(num_rolls)
         await ctx.send(embed=embed, view=view)
 
 

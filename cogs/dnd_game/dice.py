@@ -16,7 +16,7 @@ class Dice():
 
         return rolls
 
-    def create_roll_embed(self, num_rolls: int, rolls: list[int]=[], roll_type: str="normal"):
+    def get_embed(self, num_rolls: int, rolls: list[int]=[], roll_type: str="normal"):
         embed = discord.Embed(
             title="Let's go gampling!",
             description=f"**Rolling** `{num_rolls}d{self.num_sides}`",
@@ -24,13 +24,12 @@ class Dice():
         )
         
         embed.add_field(
-            name="Rolling for ",
+            name="Roll Type: ",
             value=f"`{roll_type.capitalize()}`",
-            inline=True
         )
         embed.add_field(
             name="All Rolls:",
-            value=", ".join(rolls)
+            value=f"`{', '.join(map(str, rolls))}`" if rolls else "....."
         )
 
         if roll_type == "advantage":
@@ -38,14 +37,14 @@ class Dice():
         elif roll_type == "disadvantage":
             value = str(min(rolls))
         elif roll_type == "normal" and rolls:
-            value = rolls[0]
+            value = str(sum(rolls))
         else:
             value = "Waiting for roll..."
 
         embed.add_field(
             name="**You rolled: **",
             value=f"`{value}`",
-            inline=False
-        )
-
+            inline=False)
+        
+        embed.set_image(url="https://i.imgur.com/kmJYja0.png")
         return embed
