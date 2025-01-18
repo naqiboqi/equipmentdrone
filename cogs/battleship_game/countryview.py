@@ -12,20 +12,8 @@ of available countries, and updates the game's state accordingly when a selectio
     - Uses `discord.ui.View` to create an interactive select dropdown for players to choose a country.
     - The selected country is displayed in the embed message, reflecting each player's choice.
 
-- **Data Management**:
-    - The module loads country names and associated ship names from a JSON file (`ship_names.json`).
-    - The file is loaded into memory when the module is initialized, and any errors in loading are caught and logged.
-
-### Classes:
-- **`CountryView`**:
-    A custom `discord.ui.View` that allows players to select a country, which is then stored in 
-    the corresponding `Player` object. The view interacts with both players and updates the 
-    embed message showing the countries each player has chosen.
-
 ### Dependencies:
 - **`discord`**: For creating and managing the interactive Discord UI components like `discord.ui.View` and `discord.ui.Select`.
-- **`json`**: For loading and parsing the `ship_names.json` file, which contains the available countries.
-- **`os`**: For managing file paths and ensuring proper access to the `ship_names.json` file.
 - **`player`**: Imports the `Player` class, which represents players in the game and stores their country choice.
 """
 

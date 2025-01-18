@@ -36,7 +36,11 @@ Key Features:
 - **`asyncio`**: For asynchronous event handling and playlist management.
 - **`discord`**: For interacting with Discord APIs and sending embeds.
 - **`time`**: For tracking playback and elapsed time.
+- **`discord.ext`**: For Discord bot command usage.
+- **`constants` **: For retrieving custom emojis.
 - **`video`**: Represents the media source for playback.
+- **`videoplaylist`** : For adding and storing vidoes.
+` **`videoplayerview`** : For media controls via buttons.
 """
 
 
@@ -112,6 +116,28 @@ class VideoPlayer:
         ctx.bot.loop.create_task(self.player_loop())
         
     async def player_loop(self):
+        """
+        Main loop responsible for managing the playback of video content in the playlist.
+
+        This function continuously waits for the playlist to have content ready, 
+        retrieves the current video source, prepares the next source for seamless playback
+        (in the case of replaying a video), and manages playback control.
+
+        Behavior:
+        ---------
+        - Waits for a signal from the video playlist before moving to the next video.
+        - Fetches the current video source and prepares a new source object to replace it.
+        - Plays the current video using the voice client's audio player.
+        - Updates the player details dynamically during playback with a progress bar and current volume.
+        - Cleans up resources after the video finishes playing.
+
+        Post-playback:
+        --------------
+        - Cleans up the source object after playback ends.
+        - Advances the playlist to the next video.
+
+        The method runs until the bot's voice connection with Discord is closed.
+        """
         await self.bot.wait_until_ready()
 
         while not self.bot.is_closed():
@@ -119,16 +145,15 @@ class VideoPlayer:
 
             self.next.clear()
             source = self.video_playlist.now_playing.content
-            print(source)
             
             if not isinstance(source, Video):
                 print(f"Error: The next video is not valid: {source}")
                 continue
             
             new_source = await Video.get_source(
-                ctx=self.ctx, search=source.title, 
+                ctx=self.ctx, search=source.web_url, 
                 loop=self.bot.loop, 
-                download=False, 
+                download=False,
                 seek_time=source.seek_time)
             await self.video_playlist.replace_current(new_source)
 
@@ -155,18 +180,25 @@ class VideoPlayer:
                 The start time of the video.
         """
         paused_time = 0.00
-        while True:
-            await asyncio.sleep(1.00)
-            if self.guild.voice_client.is_playing():
-                elapsed_time = time.perf_counter() - (start_time + paused_time)
-                await self.show_player_details(elapsed_time)
-            elif self.paused:
-                paused_time += 1.00
-            else:
-                # Case for when the video is finished playing
-                elapsed_time = time.perf_counter() - (start_time + paused_time)
-                await self.show_player_details(elapsed_time)
-                break
+        try:
+            while True:
+                await asyncio.sleep(1.00)
+                
+                if self.guild.voice_client.is_playing():
+                    elapsed_time = time.perf_counter() - (start_time + paused_time)
+                    await self.show_player_details(elapsed_time)
+                elif self.paused:
+                    paused_time += 1.00
+                else:
+                    # Case for when the video is finished playing
+                    elapsed_time = time.perf_counter() - (start_time + paused_time)
+                    await self.show_player_details(elapsed_time)
+                    break
+
+        except AttributeError as e:
+            print(e)
+        except discord.errors.NotFound as e:
+            print(e)
 
     async def show_player_details(self, elapsed_time: float=0.00):
         """Creates and sends an embed showing the current details of the player:
@@ -191,7 +223,6 @@ class VideoPlayer:
             loop = None
         
         now_playing_embed = self.current.get_embed(elapsed_time=elapsed_time, loop=loop)
-
         try:
             self.now_playing_message = await self.now_playing_message.edit(embed=now_playing_embed)
         except AttributeError as e:

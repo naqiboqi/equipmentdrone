@@ -1,3 +1,47 @@
+"""
+This module provides an implementation of a video playlist system for use with media 
+playback applications, including Discord bots. It supports dynamic playlist management 
+through a doubly-linked list structure, offering efficient navigation, modification, 
+and playback controls.
+
+Key Features:
+- **Video Playlist Management**:
+    - Maintain a playlist of `Video` objects using a doubly-linked list.
+    - Add videos to the front or end of the playlist.
+    - Remove videos by position and shuffle the playlist.
+
+- **Playback Controls**:
+    - Navigate through the playlist with forward or backward movement.
+    - Support for looping a single video or the entire playlist.
+    - Efficiently handle the currently playing video and transitions.
+
+- **Asynchronous Support**:
+    - Use `asyncio` for efficient, non-blocking playlist operations.
+    - Trigger playback readiness using asynchronous events.
+
+- **Node-Based Design**:
+    - The `VideoNode` class represents individual videos in the playlist.
+    - Includes metadata like video title, URL, and duration.
+
+### Classes:
+- **`VideoNode`**:
+    Represents a single node in the playlist. Manages:
+    - Video metadata and playback information.
+    - References to the previous and next nodes for efficient navigation.
+
+- **`VideoPlaylist`**:
+    Manages the playlist as a doubly-linked list. Features include:
+    - Adding and removing videos dynamically.
+    - Navigating through the playlist with support for looping and direction changes.
+    - Shuffling and cleaning up the playlist.
+
+### Dependencies:
+- **`asyncio`**: For handling asynchronous playlist operations.
+- **`random`**: For shuffling the playlist.
+- **`time`**: For formatting video durations.
+- **`constants`**: For accessing custom emoji constants.
+- **`video`**: Represents the media source for playback.
+"""
 
 
 
@@ -15,6 +59,17 @@ playlist_emoji = emojis.get("playlist")
 
 
 class VideoNode:
+    """Represents a video in a playlist.
+    
+    Attributes:
+    -----------
+        content : Video
+            The video stored in the node.
+        prev : VideoNode
+            The previous node in the playlist.
+        next : VideoNode
+            The next node in the playlist.
+    """
     def __init__(self, content: Video, prev: "VideoNode"=None, next: "VideoNode"=None):
         self.content = content
         self.prev = prev
@@ -28,6 +83,7 @@ class VideoNode:
 
 
 class VideoPlaylist:
+    """Represents a video playlist by the form of a doubly-linked list."""
     def __init__(self):
         self.now_playing: VideoNode = None
         self.head: VideoNode = None
@@ -40,6 +96,7 @@ class VideoPlaylist:
         self.ready = asyncio.Event()
         
     def cleanup(self):
+        """Clears the playlsit and resets its settings."""
         self.head = None
         self.tail = None
         self.now_playing = None
@@ -51,58 +108,79 @@ class VideoPlaylist:
         self.ready.clear()
         
     def set_loop_one(self):
+        """Tells the player to replay the currently playing video, if it exists."""
         self.loop_all = False
         self.loop_one = not self.loop_one
         
-        if self.now_playing:
-            self.ready.set()
+        # if self.now_playing:
+        #     self.ready.set()
             
         return self.loop_one
     
     def set_loop_all(self):
+        """Tells the player to replay the entire playlist."""
         self.loop_one = False
         self.loop_all = not self.loop_all
 
         return self.loop_all
 
-    async def _add_first(self, new_video):
+    async def _add_first_node(self, new_video: VideoNode):
+        """Adds a node to an initially empty playlist.
+        
+        Params:
+        -------
+            new_video : VideoNode
+                The new node to add.
+        """
         self.head = new_video
         self.tail = new_video
         self.now_playing = new_video
+        
         self.ready.set()
 
     async def add_to_end(self, video: Video):
-        new_video = VideoNode(video)
+        """Adds a video to the end of the playlist.
+        
+        Params:
+        -------
+            video: Video
+                The video to add.
+        """
+        new_node = VideoNode(video)
 
         if not self.head:
-            await self._add_first(new_video)
+            await self._add_first(new_node)
         else:
-            new_video.prev = self.tail
-            self.tail.next = new_video
-            self.tail = new_video
+            new_node.prev = self.tail
+            self.tail.next = new_node
+            self.tail = new_node
         
-        self.size += 1
         if self.now_playing is None:
             self.now_playing = self.tail
-            
+        
+        self.size += 1
         self.ready.set()
         
     async def add_to_front(self, video: Video):
-        new_video = VideoNode(video)
+        """Adds a video to the front of the playlist.
+        
+        Params:
+        -------
+            video: Video
+                The video to add.
+        """
+        new_node = VideoNode(video)
         if not self.head:
-            await self._add_first(new_video)
+            await self._add_first(new_node)
         else:
-            self.head.prev = new_video
-            new_video.next = self.head
-            self.head = new_video
+            self.head.prev = new_node
+            new_node.next = self.head
+            self.head = new_node
             
         self.size += 1
         
     def advance(self):
-        """Advances to next video to play.
-        
-        If playing the previous, goes backwards and resets `self.forward`
-        """
+        """Advances to next video to play depending on the playlist's current direction (`self.forward`)."""
         if self.forward:
             self.move_forward()
         else:
@@ -111,17 +189,18 @@ class VideoPlaylist:
         self.forward = True
 
     def move_forward(self):
-        """Moves to the next video in the playlist and sets it as current.
+        """Moves to the next video in the playlist and sets it as the current.
         
-        If the player is looping the current video, replays it.
-        
-        If the player is looping the whole playlist and we are at the end,
-        starts from the video.
+        Loops the current video if `loop_one = True`, or replays the playlist
+        from the beginning if `loop_all = True` and the playlist is over.
         """
-        if self.loop_one and self.now_playing:
-            self.ready.set()
+        if not self.now_playing:
             return
         
+        if self.loop_one:
+            self.ready.set()
+            return
+
         if not self.now_playing.next:
             if self.loop_all:
                 self.now_playing = self.head
@@ -134,48 +213,49 @@ class VideoPlaylist:
         self.now_playing = self.now_playing.next
         self.ready.set()
         
-    def backward(self):
+    def move_backward(self):
+        """Moves to the previous video in the playlist and sets it as the current.
+        
+        In the case that `loop_all = True` and the first video is playing, moves to the last video in the playlist.
+        Otherwise loops the current video if `loop_one = True`.
+        """
+        if not self.now_playing:
+            return
+        
+        if self.loop_one:
+            self.ready.set()
+            return
+        
         if not self.now_playing.prev:
-            print("beginning of playlist")
-            
             if self.loop_all:
-                print("going back to end")
                 self.now_playing = self.tail
             else:
-                print("replaying first song")
                 self.now_playing = self.head
-            
         else:
-            print(f"going backward from {self.now_playing}")
             self.now_playing = self.now_playing.prev
         
-        print(f"now at {self.now_playing}")
         self.ready.set()
         
     async def replace_current(self, video: Video):
-        next = self.now_playing.next
-        prev = self.now_playing.prev
-        self.now_playing = VideoNode(video, prev, next)
+        """Replaces the current video's source with a new source.
         
-        # if this is the head
-        if not self.now_playing.prev:
-            self.head = self.now_playing
-            print("is head")
-        else:
-            prev.next = self.now_playing
+        This is because the original stream is depleted, and for replaying videos,
+        requires an unplayed stream.
         
-        # if this is the tail
-        if not self.now_playing.next:
-            self.tail = self.now_playing
-            print("is tail")
-        else:
-            next.prev = self.now_playing
+        Params:
+        -------
+            video : Video
+                The video with the unplayed stream.
+        """
+        self.now_playing.content = video
 
     def shuffle(self):
+        """Shuffles the playlist."""
         if not self.head or self.head == self.tail:
             return
 
-        def swap_nodes(node1, node2):
+        def swap_nodes(node1: VideoNode, node2):
+            """Swaps the content of two nodes."""
             node1.content, node2.content = node2.content, node1.content
 
         current = self.head
@@ -190,6 +270,15 @@ class VideoPlaylist:
             current = current.next
             
     def remove(self, spot: int):
+        """Removes a video at the given spot in the playlist.
+        
+        Raises an `IndexError` if no video exists at that spot.
+        
+        Params:
+        -------
+            spot : int
+                The spot to remove the video from.
+        """
         if not self.head:
             raise IndexError("The playlist is empty.")
         
@@ -236,12 +325,14 @@ class VideoPlaylist:
         return descriptions
         
     def __iter__(self):
+        """"""
         current = self.head
         while current:
             yield current
             current = current.next
 
     def __str__(self):
+        """Returns a string representation of the playlist."""
         total_runtime = sum(node.content['duration'] for node in self)
         formatted_runtime = strftime('%H:%M:%S', gmtime(total_runtime))
         return f"**Upcoming Videos**: | Total runtime: {formatted_runtime}"

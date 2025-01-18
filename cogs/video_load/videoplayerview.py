@@ -7,7 +7,7 @@ from discord.ext import commands
 from .constants import emojis
 
 
-
+stop_emoji = emojis.get("stop")
 prev_emoji = emojis.get("prev")
 next_emoji = emojis.get("next")
 pause_emoji = emojis.get("pause")
@@ -19,10 +19,32 @@ repeat_one = emojis.get("repeat_one")
 
 
 class VideoPlayerView(discord.ui.View):
-    def __init__(self, bot: commands.Bot, ctx: commands.Context, *, timeout=180):
+    """
+    A Discord UI View for media controls.
+
+    This class provides an interactive interface where players can control a video player
+    with actions such as pausing or playing, or skipping to the next or previous track.
+
+    Attributes:
+    -----------
+        bot : commands.Bot
+            The bot instance.
+        ctx: commands.Context:
+            The current context for the view.
+    """
+    def __init__(self, bot: commands.Bot, ctx: commands.Context, *, timeout=None):
         super().__init__(timeout=timeout)
         self.bot = bot
         self.ctx = ctx
+        
+    @discord.ui.button(emoji=stop_emoji, style=discord.ButtonStyle.blurple)
+    async def _stop(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button):
+        """Stops the player by invoking the `stop` command."""
+        await interaction.response.defer()
+        await self.ctx.invoke(self.bot.get_command("stop"))
 
     @discord.ui.button(emoji=prev_emoji, style=discord.ButtonStyle.blurple)
     async def _prev(
@@ -61,4 +83,4 @@ class VideoPlayerView(discord.ui.View):
         button: discord.ui.Button):
         """Loops the currently playing video by invoking the `loop_one` command."""
         await interaction.response.defer()
-        await self.ctx.invoke(self.bot.get_command("loop_one"))
+        await self.ctx.invoke(self.bot.get_command("loopone"))

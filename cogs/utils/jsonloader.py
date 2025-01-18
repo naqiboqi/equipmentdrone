@@ -1,7 +1,7 @@
 """
 This module provides utility functions for loading and caching JSON data, 
-designed to read JSON files, store their contents in a cache, and handle 
-common file-related errors. It is intended for use across multiple modules 
+designed to read JSON files, and store their contents.
+It is intended for use across multiple modules 
 to ensure efficient loading and retrieval of JSON data.
 
 ### Key Features:
@@ -22,6 +22,7 @@ to ensure efficient loading and retrieval of JSON data.
 
 ### Dependencies:
 - **`json`**: For parsing JSON data from files.
+- **`typing`**: For type hinting and function signatures.
 """
 
 
@@ -56,7 +57,8 @@ class JsonLoader:
 
         Params:
         -------
-            filename (str): The path to the JSON file to load.
+            filename : str
+                The path to the JSON file to load.
         """
         if filename not in cls._cache:
             try:
