@@ -257,6 +257,8 @@ class Video(discord.PCMVolumeTransformer):
         -------
         elapsed_time: float
             The elapsed time of the video, in seconds.
+        loop: str
+            The type of loop, if the player is looping. Can be `all`, `one` or `none`.
         """
         self.elapsed_time = elapsed_time
         elapsed = time.strftime('%H:%M:%S', time.gmtime(elapsed_time))
