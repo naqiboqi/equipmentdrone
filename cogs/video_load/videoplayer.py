@@ -81,8 +81,6 @@ class VideoPlayer:
             The current context associated with a command.
         guild : discord.Guild
             The current guild associated with a command.
-        next : asyncio.Event
-            The signal to start the next video in the playlist.
         playlist : asyncio.playlist
             The playlist storing upcoming videos.
         current : Video
@@ -91,8 +89,6 @@ class VideoPlayer:
             The embed storing the player's current information.
         playlist_embed : discord.Message
             The embed storing the upcoming videos' information.
-        loop : bool
-            Whether the player is looping the current video.
         paused : bool
             Whether the player is paused.
         volume : float
@@ -104,7 +100,6 @@ class VideoPlayer:
         self.cog = ctx.cog
         self.ctx = ctx
         self.guild = ctx.guild
-        self.next = asyncio.Event()
         self.video_playlist = VideoPlaylist()
 
         self.current: Video = None
@@ -143,7 +138,7 @@ class VideoPlayer:
         while not self.bot.is_closed():
             await self.video_playlist.ready.wait()
 
-            self.next.clear()
+            self.video_playlist.ready.clear()
             source = self.video_playlist.now_playing.content
             
             if not isinstance(source, Video):
@@ -160,12 +155,24 @@ class VideoPlayer:
             self.current = source
             start_time = time.perf_counter() - source.seek_time
             source.start(start_time, self.volume)
-            self.guild.voice_client.play(source, after=self.video_playlist.advance())
+            self.guild.voice_client.play(
+                source, after=lambda e: 
+                    asyncio.run_coroutine_threadsafe(self.after_play(e), self.bot.loop))
 
             await self.show_player_details()
             await self.timer(self.current.start_time)
             
-            source.cleanup()
+    async def after_play(self, error=None):
+        if error:
+            print(error)
+            
+        if self.video_playlist.forward:
+            await self.show_player_details(elapsed_time=self.current.duration)
+            
+        self.video_playlist.advance()
+        
+        if self.current:
+            self.current.cleanup()
             self.current = None
 
     async def timer(self, start_time: float):
@@ -223,12 +230,11 @@ class VideoPlayer:
             loop = None
         
         now_playing_embed = self.current.get_embed(elapsed_time=elapsed_time, loop=loop)
-        try:
+        if self.now_playing_message:
             self.now_playing_message = await self.now_playing_message.edit(embed=now_playing_embed)
-        except AttributeError as e:
+        else:
             view = VideoPlayerView(self.bot, self.ctx)
             self.now_playing_message = await self.channel.send(embed=now_playing_embed, view=view)
-            print(f"Error {e}")
 
     async def add_videos_to_playlist(
         self, 

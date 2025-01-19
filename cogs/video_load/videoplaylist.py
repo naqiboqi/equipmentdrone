@@ -149,7 +149,7 @@ class VideoPlaylist:
         new_node = VideoNode(video)
 
         if not self.head:
-            await self._add_first(new_node)
+            await self._add_first_node(new_node)
         else:
             new_node.prev = self.tail
             self.tail.next = new_node
@@ -157,30 +157,15 @@ class VideoPlaylist:
         
         if self.now_playing is None:
             self.now_playing = self.tail
+            self.ready.set()
         
-        self.size += 1
-        self.ready.set()
-        
-    async def add_to_front(self, video: Video):
-        """Adds a video to the front of the playlist.
-        
-        Params:
-        -------
-            video: Video
-                The video to add.
-        """
-        new_node = VideoNode(video)
-        if not self.head:
-            await self._add_first(new_node)
-        else:
-            self.head.prev = new_node
-            new_node.next = self.head
-            self.head = new_node
-            
         self.size += 1
         
     def advance(self):
         """Advances to next video to play depending on the playlist's current direction (`self.forward`)."""
+        if not self.now_playing:
+            return
+        
         if self.forward:
             self.move_forward()
         else:
@@ -194,23 +179,25 @@ class VideoPlaylist:
         Loops the current video if `loop_one = True`, or replays the playlist
         from the beginning if `loop_all = True` and the playlist is over.
         """
-        if not self.now_playing:
-            return
-        
         if self.loop_one:
+            print(f"replaying current {self.now_playing}")
             self.ready.set()
             return
+        
+        print(f"moving from {self.now_playing} to {self.now_playing.next}")
+        self.now_playing = self.now_playing.next
 
-        if not self.now_playing.next:
+        if not self.now_playing:
             if self.loop_all:
                 self.now_playing = self.head
+                print(f"replaying from the beginning {self.now_playing}")
                 self.ready.set()
-            else:    
-                self.ready.clear()
-                
-            return
-
-        self.now_playing = self.now_playing.next
+                return
+            else:
+                print("reached the end")
+                return
+        
+        print("playing next")
         self.ready.set()
         
     def move_backward(self):
@@ -219,21 +206,27 @@ class VideoPlaylist:
         In the case that `loop_all = True` and the first video is playing, moves to the last video in the playlist.
         Otherwise loops the current video if `loop_one = True`.
         """
-        if not self.now_playing:
-            return
-        
         if self.loop_one:
+            print(f"replaying current {self.now_playing}")
             self.ready.set()
             return
         
-        if not self.now_playing.prev:
+        print(f"moving backwards from {self.now_playing} to {self.now_playing.prev}")
+        self.now_playing = self.now_playing.prev
+        
+        if not self.now_playing:
             if self.loop_all:
                 self.now_playing = self.tail
+                print(f"moving to the last video of the playlist {self.now_playing}")
+                self.ready.set()
+                return
             else:
                 self.now_playing = self.head
-        else:
-            self.now_playing = self.now_playing.prev
+                print(f"replaying first {self.now_playing}")
+                self.ready.set()
+                return
         
+        print("playing prev")
         self.ready.set()
         
     async def replace_current(self, video: Video):
@@ -248,6 +241,7 @@ class VideoPlaylist:
                 The video with the unplayed stream.
         """
         self.now_playing.content = video
+        print("replaced")
 
     def shuffle(self):
         """Shuffles the playlist."""
