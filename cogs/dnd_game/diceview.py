@@ -80,7 +80,6 @@ class DiceView(discord.ui.View):
             button : Button
                 The button object.
         """
-
         rolls = self.dice.roll(self.num_rolls)
         embed = self.dice.get_embed(self.num_rolls, rolls, "disadvantage")
 
