@@ -347,15 +347,11 @@ class Game:
             self._add_event_to_log([self.attacker, self.defender], "finished_game")
             return True
 
-        self._next_turn()
+        self.attacker = self.player_1 if self.attacker == self.player_2 else self.player_2
+        self.defender = self.player_2 if self.attacker == self.player_1 else self.player_1
+        self._add_event_to_log([self.attacker, self.defender], "next_turn")
         return False
 
     def _is_over(self):
         """Returns whether or not the game is over (eg. if either player has no ships)."""
         return self.player_1.is_defeated() or self.player_2.is_defeated()
-
-    def _next_turn(self):
-        """Progresses the game to the next turn."""
-        self.attacker = self.player_1 if self.attacker == self.player_2 else self.player_2
-        self.defender = self.player_2 if self.attacker == self.player_1 else self.player_1
-        self._add_event_to_log([self.attacker, self.defender], "next_turn")
