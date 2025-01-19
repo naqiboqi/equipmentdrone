@@ -12,7 +12,9 @@ class Tile(discord.ui.Button):
         self.y = y
         self.x = x
 
-class BoardView(discord.ui.View):
+
+
+class GameView(discord.ui.View):
     def __init__(self, game: Game, timeout=None):
         super().__init__(timeout=timeout)
         self.game = game
