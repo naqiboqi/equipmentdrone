@@ -316,7 +316,7 @@ class VideoController(commands.Cog):
 
         player = self.get_player(ctx)
         player.volume = vol / 100
-        await ctx.send(f"{emojis.get("sound_on")}  Set the volume to `{vol}`%.", delete_after=10)
+        await ctx.send(f"{emojis.get('sound_on')}  Set the volume to `{vol}`%.", delete_after=10)
         
     @commands.hybrid_command(name="loopall")
     async def _loop_all(self, ctx: commands.Context):
