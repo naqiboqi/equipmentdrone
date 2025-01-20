@@ -8,5 +8,5 @@ class Player:
         self.member = member
         self.symbol = symbol
         
-    def __eq__(self, other: "Player"):
-        return self.member == other.member
+    def __eq__(self, other: discord.Member):
+        return self.member == other

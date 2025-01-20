@@ -48,10 +48,9 @@ game setup, turn-based play, and result tracking.
 
 import discord
 
-from asyncio import sleep
 from discord.ext import commands
 from typing import Optional
-from .utils import PageView
+from .tictactoe_game import Game, GameView, Player
 
 
 
@@ -62,12 +61,12 @@ class TicTacToe(commands.Cog):
     ----------
         bot : commands.Bot
             The current bot instance.
-        player_games : dict[int, Game]
+        player_games : dict[int, GameView]
             Stores the games associated with each player.
     """
     def __init__(self, bot):
         self.bot = bot
-        self.player_games: dict[int, Game] = {}
+        self.player_games: dict[int, GameView] = {}
 
     @commands.hybrid_command(name='tictactoe', aliases=["ttt"])
     async def _start(self, ctx: commands.Context, member: Optional[discord.Member]=None):
@@ -83,90 +82,26 @@ class TicTacToe(commands.Cog):
             member : discord.Member
                 The other Discord `member` to play against. If `None`, plays agains the bot.
         """
-        player_1 = Player(ctx.message.author)
+        player_1 = Player(ctx.message.author, "⭕")
 
         bot_player = member is None
-        player_2 = Player(member if member else self.bot.user)
+        player_2 = Player(member if member else self.bot.user, "❌")
 
         if (player_1.member.id in self.player_games or
             player_2.member.id in self.player_games):
             return await ctx.send("One of the players is already in a game!")
 
         game = Game(player_1, player_2, bot_player)
-        self.player_games[player_1.member.id] = game
-        self.player_games[player_2.member.id] = game
-        await game.setup(ctx)
-
-    @commands.hybrid_command(name='attack')
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def _attack(self, ctx: commands.Context, move: str):
-        """Attacks the given position on the board. Valid attacks are `A1`, `b9`, `c10`, `d4`, etc.
-
-        Params:
-        -------
-            ctx: commands.Context
-                The current context associated with a command.
-            move : str
-                The input move to be validated.
+        game.current_player = player_1
+        gameview = GameView(game)
         
-        If the attack command is valid, performs an attack on the board and
-        then proceeds to the next turn, or prompts the user again if invalid.
-        """
-        game = self.player_games.get(ctx.author.id)
-        if not game:
-            return await ctx.send("You are not in a game!")
-
-        if game.attacker.member.id != ctx.author.id:
-            return await ctx.send("It is not your turn!", delete_after=10)
-
-        parsed = game.is_move_valid(player=game.attacker, move=move)
-        if not parsed:
-            return await ctx.send(f"The move {move} is not valid, try again.", delete_after=10)
-
-        await ctx.send(f"Attacking {move}...", delete_after=5)
-        await sleep(3)
+        self.player_games[player_1.member.id] = gameview
+        self.player_games[player_2.member.id] = gameview
         
-        attack, sunk = game.commence_attack(parsed[0], parsed[1])
-        await game.handle_attack_message(attack, sunk)
-        await game.next_turn(ctx)
-        
-    @commands.hybrid_command(name="movelog")
-    async def _show_move_log(self, ctx: commands.Context):
-        """Sends an embed containing all the moves of the game.
-        
-        Params:
-        -------
-            ctx: commands.Context
-                The current context associated with a command.
-        """
-        game = self.player_games.get(ctx.author.id)
-        if not game:
-            return await ctx.send("You are not in a game!")
-        
-        view = PageView("Battleship Game Log", game.log_.events)
-        game.log_message = await ctx.send(embed=view.pages[0], view=view)
-        
-    async def end_game_(self, ctx: commands.Context, game: Game):
-        """Ends the currently running game.
-        
-        Params:
-        -------
-            ctx: commands.Context
-                The current context associated with a command.
-            game : Game
-                The game instance to end.
-        """
-        player_1 = game.player_1
-        player_2 =  game.player_2
-
-        if game.bot_player and game.attacker == game.player_2:
-            await ctx.send("I win the game! 🏆")
-        else:
-            await ctx.send(f"{game.attacker.member.mention}, you win the game! 🏆")
-
-        del self.player_games[player_1.member.id]
-        del self.player_games[player_2.member.id]
+        embed = game.get_embed()
+        game.board_message = await ctx.send(embed=embed, view=gameview)
+        game.turn_message = await ctx.send(f"{player_1.member.mention}, you are going first!")
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(BattleShip(bot))
+    await bot.add_cog(TicTacToe(bot))

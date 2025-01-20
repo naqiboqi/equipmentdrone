@@ -19,29 +19,31 @@ class GameView(discord.ui.View):
         super().__init__(timeout=timeout)
         self.game = game
         self.board = game.board
+        self._create_buttons()
         
     async def _select_tile(self, interaction: discord.Interaction):
         if not self.game.is_player_turn(interaction.user):
-            return await interaction.response.send_message("It is not your turn!")
+            return await interaction.response.send_message("It is not your turn!", delete_after=10)
         
         current_player = self.game.current_player
         custom_id = interaction.data["custom_id"]
-        y, x = custom_id.split(":")
+        y, x = map(int, custom_id.split(":"))
+        
+        if not self.game.mark(y, x, current_player.symbol):
+            return await interaction.response.send_message(
+                f"{current_player.member.mention}, that space is filled!", delete_after=10)
         
         for child in self.children:
             if isinstance(child, Tile) and child.custom_id == custom_id:
                 child.label = current_player.symbol
                 child.disabled = True
                 break
-            
-        if not self.game.mark(y, x, current_player.symbol):
-            return await interaction.response.send_message(
-                f"{current_player.member.mention}, that space is filled!", delete_after=10)
-            
-        await interaction.message.edit(view=self)
-        await self.game.next_turn(interaction.context)
+        
+        embed = self.game.get_embed()
+        await interaction.message.edit(embed=embed, view=self)
+        await self.game.next_turn()
 
-    async def _create_buttons(self):
+    def _create_buttons(self):
         for y in range(self.board.size):
             for x in range(self.board.size):
                 tile = Tile(

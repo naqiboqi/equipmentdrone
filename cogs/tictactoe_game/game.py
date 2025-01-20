@@ -2,8 +2,9 @@ import discord
 
 from asyncio import sleep
 from discord.ext import commands
-from board import Board
-from player import Player
+from random import choice
+from .board import Board
+from .player import Player
 
 
 
@@ -22,19 +23,16 @@ class Game:
 
         self.board_message: discord.Message = None
         self.turn_message: discord.Message = None
-
-    async def setup(self, ctx: commands.Context):
-        self.current_player = self.player_1
-        self.turn_message = await ctx.send(f"{self.player_1.member.mention}, you are going first!")
     
     def is_player_turn(self, member: discord.Member):
         return self.current_player == member
     
     def _is_valid_loc(self, y: int, x: int):
-        return self.board.grid[y][x] != OPEN
+        return self.board.grid[y][x] == OPEN
     
     def mark(self, y: int, x: int, symbol: str):
         if self._is_valid_loc(y, x):
+            print("marking")
             self.board.mark(y, x, symbol)
             return True
             
@@ -43,18 +41,22 @@ class Game:
     def _is_bot_turn(self):
         return self.bot_player and self.current_player == self.player_2
         
-    async def next_turn(self, ctx: commands.Context):
-        if self._is_game_over():
-            await self._game_over(ctx)
+    async def next_turn(self):
+        print("next turn")
+        #if self._is_game_over():
+        #    return await self._game_over(ctx)
+        #    
+        #if self.board.is_full():
+        #    return await self._game_over_draw(ctx)
         
-        if self.current_player == self.player_1:
+        if self.current_player == self.player_1.member:
             self.current_player = self.player_2
         else:
             self.current_player = self.player_1
 
         await self._handle_turn_message()
         if self._is_bot_turn():
-            self._bot_turn()
+            await self._bot_turn()
         
     async def _handle_turn_message(self):
         if self._is_bot_turn():
@@ -64,15 +66,17 @@ class Game:
             self.turn_message = await self.turn_message.edit(
                 content=f"{self.current_player.member.mention}, it is now your turn!")
         
-    def _bot_turn(self):
+    async def _bot_turn(self):
         board_size = self.board.size
-        for y in range(board_size):
-            for x in range(board_size):
-                if self._is_valid_loc(y, x):
-                    self.mark(y, x, self.player_2.symbol)
-                    
         
+        valid_locs = [
+            (y, x) for y in range(board_size) for x in range(board_size) if self._is_valid_loc(y, x)
+        ]
         
+        y, x = choice(valid_locs)
+        self.board.mark(y, x, self.current_player.symbol)
+        await self.next_turn()
+    
     def _is_game_over(self):
         symbol = self.current_player.symbol
         board_size = self.board.size
@@ -92,6 +96,9 @@ class Game:
             return True
 
         return False
+    
+    def get_embed(self):
+        return self.board.get_embed(self.current_player)
 
     async def _game_over(self, ctx: commands.Context):
         await ctx.send(f"{self.current_player} has won the game!")

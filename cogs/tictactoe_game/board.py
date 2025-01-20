@@ -1,6 +1,10 @@
+import discord
+
+from .player import Player
 
 
 OPEN = "⏹️"
+
 
 
 class Board:
@@ -14,9 +18,19 @@ class Board:
     def mark(self, y: int, x: int, symbol: str):
         self.grid[y][x] = symbol
         
+    def get_embed(self, current_player: Player):
+        embed = discord.Embed(
+            title="Tic-Tac-Toe!",
+            description=f"{self}",
+            color=discord.Color.red()
+        )
+        
+        embed.set_footer(text=f"Currently {current_player.member.name}'s turn.")
+        return embed
+
     def __str__(self):
         board = ""
-        for row in board:
-            board += "".join(row)
+        for row in self.grid:
+            board += f"{''.join(row)}\n"
 
         return board
