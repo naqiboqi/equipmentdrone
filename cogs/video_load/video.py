@@ -277,7 +277,7 @@ class Video(discord.PCMVolumeTransformer):
             loop_emoji = loop_none
         
         now_playing_embed = discord.Embed(
-            title=f"{emojis.get("now_playing")}  NOW PLAYING",
+            title=f"{emojis.get('now_playing')}  NOW PLAYING",
             description=f"""
 
             [{self.title}]({self.web_url}) **by** `{self.uploader}`

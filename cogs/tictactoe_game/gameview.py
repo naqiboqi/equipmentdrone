@@ -1,5 +1,3 @@
-
-
 import discord
 
 from .game import Game
@@ -21,27 +19,28 @@ class GameView(discord.ui.View):
         self.board = game.board
         self._create_buttons()
         
+    async def mark_button_tile(self, y: int, x: int, symbol: str):
+        for child in self.children:
+            if isinstance(child, Tile) and child.custom_id == f"{y}:{x}":
+                child.label = symbol
+                child.disabled = True
+                return
+        
     async def _select_tile(self, interaction: discord.Interaction):
         if not self.game.is_player_turn(interaction.user):
             return await interaction.response.send_message("It is not your turn!", delete_after=10)
         
         current_player = self.game.current_player
         custom_id = interaction.data["custom_id"]
-        y, x = map(int, custom_id.split(":"))
+        symbol = current_player.symbol
         
-        if not self.game.mark(y, x, current_player.symbol):
+        y, x = map(int, custom_id.split(":"))
+        if not self.game.mark(y, x, symbol):
             return await interaction.response.send_message(
                 f"{current_player.member.mention}, that space is filled!", delete_after=10)
-        
-        for child in self.children:
-            if isinstance(child, Tile) and child.custom_id == custom_id:
-                child.label = current_player.symbol
-                child.disabled = True
-                break
-        
-        embed = self.game.get_embed()
-        await interaction.message.edit(embed=embed, view=self)
-        await self.game.next_turn()
+
+        await self.mark_button_tile(y, x, symbol)
+        await self.game.next_turn(y, x)
 
     def _create_buttons(self):
         for y in range(self.board.size):
@@ -51,8 +50,11 @@ class GameView(discord.ui.View):
                     x=x,
                     label=self.board.grid[y][x],
                     style=discord.ButtonStyle.blurple,
-                    row=y
-                )
+                    row=y)
                 
                 tile.callback = self._select_tile
                 self.add_item(tile)
+                
+    async def disable_all_tiles(self):
+        for child in self.children:
+            child.disabled = True

@@ -91,9 +91,10 @@ class TicTacToe(commands.Cog):
             player_2.member.id in self.player_games):
             return await ctx.send("One of the players is already in a game!")
 
-        game = Game(player_1, player_2, bot_player)
+        game = Game(self.bot, player_1, player_2, bot_player)
         game.current_player = player_1
         gameview = GameView(game)
+        game.view = gameview
         
         self.player_games[player_1.member.id] = gameview
         self.player_games[player_2.member.id] = gameview
@@ -102,6 +103,23 @@ class TicTacToe(commands.Cog):
         game.board_message = await ctx.send(embed=embed, view=gameview)
         game.turn_message = await ctx.send(f"{player_1.member.mention}, you are going first!")
 
+    async def end_game(self, game: Game):
+        winner = game.winner
+        if not winner:
+            message = "The game has ended in a draw."
+        else:
+            message = f"{winner.member.name} has won the game!"
+            
+        await game.board_message.reply(message)
+        await self.cleanup(game)
+
+    async def cleanup(self, game: Game):
+        await game.cleanup()
+        
+        player_1 = game.player_1
+        player_2 = game.player_2
+        del self.player_games[player_1.member.id]
+        del self.player_games[player_2.member.id]
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(TicTacToe(bot))
