@@ -197,12 +197,12 @@ class Board():
             emojis.get("board_j")
         ]
         
-        board = f"{emojis.get("board_tl")}{''.join(numbers)}{emojis.get("board_tr")}\n"
+        board = f"{emojis.get('board_tl')}{''.join(numbers)}{emojis.get('board_tr')}\n"
         for i in range(self.size):
             row = self.grid[i]
             board += f"{letters[i]}{''.join(spot for spot in row)}{letters[i]}\n"
         
-        board += f"{emojis.get("board_bl")}{''.join(numbers)}{emojis.get("board_br")}\n"
+        board += f"{emojis.get('board_bl')}{''.join(numbers)}{emojis.get('board_br')}\n"
         return board
 
 
@@ -243,9 +243,12 @@ class DefenseBoard(Board):
             bot_player : bool
                 If the placing player is a bot or not.
         """
+        self.clear_board()
+        
         for ship in fleet:
             ship.locs = []
             ship.placed_before = False
+            ship.confirmed = False
             
             while not ship.placed_before and not ship.confirmed:
                 y, x = random.randint(0, self.size - 1), random.randint(0, self.size - 1)
