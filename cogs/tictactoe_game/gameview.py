@@ -75,6 +75,7 @@ class GameView(discord.ui.View):
             return await interaction.response.send_message(
                 f"{current_player.member.mention}, that space is filled!", delete_after=10)
 
+        await interaction.response.defer()
         await self.mark_button_tile(y, x, symbol)
         await self.game.next_turn(y, x)
 
