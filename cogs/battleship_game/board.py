@@ -318,6 +318,13 @@ class DefenseBoard(Board):
             ship.locs[i] = (ny, nx)
 
     def redraw(self, fleet: list[Ship]):
+        """Redraws the board with updated ship positions.
+        
+        Params:
+        -------
+            fleet : list[Ship]
+                The player's fleet.
+        """
         self.clear_board()
 
         for ship in fleet:
