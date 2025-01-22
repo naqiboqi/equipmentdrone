@@ -41,7 +41,7 @@ class Game:
         log_ : EventLog
             Used to store and send entries of game events.
         
-        country_message: discord.Message
+        country_message : discord.Message
             Used to send the players' country choices.
         attack_message : discord.Message
             Used to send and edit the current attack status.

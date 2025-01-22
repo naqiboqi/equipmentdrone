@@ -13,6 +13,32 @@ OPEN = "⏹️"
 
 
 class Game:
+    """Representation of the Tic-tac-toe game.
+    
+    Handles turn progression and action validation.
+    
+    Attributes:
+    ----------
+        bot : commands.Bot
+            The bot instance.
+        player_1 : Player
+            The first player of the game, who initiated it.
+        player_2 : Player
+            The second player, can be another Discord user or the bot itself.
+        bot_player : bool
+            If player_2 is a bot or not.
+        current_player : Player
+            The player who is currently placing.
+        
+        board : discord.Message
+            The Tic-tac-toe board.
+        view : GameView
+            The view used to display the game buttons.
+        board_message : discord.Message
+            Used to send and edit the current board state.
+        turn_message : discord.Message
+            Used to send and edit the current turn status.
+    """
     def __init__(self, bot: commands.Bot, player_1: Player, player_2: Player, bot_player: bool):
         self.bot = bot
         self.player_1 = player_1

@@ -14,7 +14,7 @@ of available countries, and updates the game's state accordingly when a selectio
 
 ### Dependencies:
 - **`discord`**: For creating and managing the interactive Discord UI components like `discord.ui.View` and `discord.ui.Select`.
-- **`player`**: Imports the `Player` class, which represents players in the game and stores their country choice.
+- **`player`**: For tracking country choice.
 """
 
 
@@ -56,7 +56,7 @@ class CountryView(discord.ui.View):
         self,
         interaction: discord.Interaction,
         select: discord.ui.Select):
-
+        """Sets the player's country to the selected choice."""
         country_names = list(ship_names.keys())
 
         if self.player_1.member == interaction.user:
