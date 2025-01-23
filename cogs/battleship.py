@@ -40,8 +40,8 @@ game setup, turn-based play, and result tracking.
 - **`discord`**: For interacting with Discord APIs and handling bot commands.
 - ** `typing`**: For optional type annotations.
 - **`asyncio`**: For sleep delays.
-- **`battleship_game`**: Game 
 """
+
 
 
 import discord
