@@ -178,7 +178,7 @@ class Game:
 
     def get_embed(self):
         """Returns an embed showing the current state of the board."""
-        return self.board.get_embed(self.current_player)
+        return self.board.get_embed()
     
     async def cleanup(self):
         """Sends the final game state and disables the embed buttons."""
