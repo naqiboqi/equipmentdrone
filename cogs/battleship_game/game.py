@@ -1,3 +1,44 @@
+"""
+This module implements the core Battleship game logic, handling gameplay mechanics 
+and game state management for the Discord bot. It provides functionality for ship 
+placement, attacking, turn-based play, and game state tracking.
+
+### Key Features:
+- **Game Logic**:
+    - Manages the core Battleship gameplay, including ship placement, attack validation, 
+      and turn progression.
+    - Supports multiplayer games, allowing human players or bots to compete.
+    - Tracks game state to ensure smooth play and manage turn order.
+
+- **Ship Placement**:
+    - Validates player ship placements, ensuring no overlap or invalid positions.
+    - Allows players to strategically position their ships before the game starts.
+
+- **Turn-based Play**:
+    - Handles turn-based gameplay, allowing players to attack opponents' boards.
+    - Tracks each attack and updates the game state accordingly, including hits, misses, 
+      and sunk ships.
+
+- **Game State Management**:
+    - Keeps track of the ongoing game state and updates the board configurations.
+    - Provides methods to check the winner and update the game status.
+
+### Classes:
+- **`Game`**:
+    Manages the logic of the Battleship game, including player turns, ship placements, 
+    attack validation, and game state tracking.
+
+### Dependencies:
+- **`discord`**: For interacting with Discord APIs and handling bot commands.
+- **`random`**: For randomizing ship placements and attack targeting.
+- **`re`**: For regular expression matching and validation (e.g., coordinates).
+- **`asyncio`**: For managing sleep delays and asynchronous operations (if required).
+- **`discord.ext`**: For Discord command usage
+- **`typing`**: For optional type annotations.
+"""
+
+
+
 import discord
 import random
 import re
@@ -5,7 +46,7 @@ import re
 from asyncio import sleep
 from discord.ext import commands
 from typing import Optional
-from .constants import ship_names, bot_messages
+from .constants import bot_messages, ship_names
 from .countryview import CountryView
 from .player import Player
 from ..utils import EventLog
@@ -57,14 +98,11 @@ class Game:
         self.attacker = player_1
         self.defender = player_2
         self.log_ = EventLog()
-        
+
         self.country_message: discord.Message = None
         self.attack_messasge: discord.Message = None
         self.turn_message: discord.Message = None
         self.log_message: discord.Message = None
-        
-        self.bot_attack_message: discord.Message = None
-        self.bot_defense_message: discord.Message = None
 
     def _add_event_to_log(
         self, 
@@ -116,14 +154,14 @@ class Game:
         player_1.set_ship_names(ship_names[player_1.country])
         player_2.set_ship_names(ship_names[player_2.country])
         self.country_message = await self.country_message.edit(view=None)
-        
+
         await sleep(2)
         await ctx.send("Check your DMs to place your ships.")
         await player_1.choose_ship_placement(ctx)
         await player_1.send_board_states()
         await ctx.send(f"{player_1.member.mention} has finished placing their ships.",
             delete_after=15)
-        
+
         await sleep(2)
         if not self.bot_player:
             await ctx.send(f"{player_2.member.mention}, please place your ships.")
@@ -133,10 +171,10 @@ class Game:
             await ctx.send("I am (very intelligently) placing my ships 🧠", delete_after=15)
             player_2.random_place_ships(bot_player=True)
             await sleep(10)
-        
+
         await ctx.send(f"{player_2.member.mention} has finished placing their ships.",
             delete_after=15)
-        
+
         await ctx.send(
             f"Game started between {self.player_1.member.mention} and "
             f"{self.player_2.member.mention}!")
@@ -145,7 +183,7 @@ class Game:
         self._add_event_to_log([self.player_1, self.player_2], "start_game")
         self.turn_message = await ctx.send(
             f"{self.player_1.member.mention}, you are going first!")
-        
+
         await sleep(1)
         self.attack_messasge = await ctx.send("Waiting for your move...")
 
@@ -185,9 +223,9 @@ class Game:
             [self.attacker, self.defender], 
             "invalid_attack", 
             [(y or "N/A", x or "N/A")])
-        
+
         return None
-    
+
     async def _bot_turn(self):
         """Simultates the bot's turn. 
         
@@ -239,7 +277,7 @@ class Game:
         else:
             self._add_event_to_log([attacker, defender], "attack_miss", [(y, x)])
             attacker.attack_board.grid[y][x] = MISS
-            
+
         return hit, sunk
     
     async def _handle_bot_turn(self, ctx: commands.Context):
@@ -249,17 +287,15 @@ class Game:
         -------
             ctx : commands.Context
                 The current context associated with a command.
-            game : Game
-                The current game instance the bot is in.
         """
         self.attack_messasge = await self.attack_messasge.edit(content="Thinking.... 🤔")
         await sleep(random.randint(1, 5))
-        
+
         hit, sunk = await self._bot_turn()
         if hit:
             self.attack_messasge = await self.attack_messasge.edit(
                 content=random.choice(bot_messages.get("attack_messages")))
-            
+
             await sleep(1)
             if sunk:
                 self.attack_messasge.reply(
@@ -278,18 +314,11 @@ class Game:
         -------
             ctx : commands.Context
                 The current context associated with a command.
-            game : Game
-                The game instance to progress.
         """
         await self.player_1.update_board_states()
 
         if not self.bot_player:
             await self.player_2.update_board_states()
-        
-        attack_embed = self.player_2.attack_board.get_embed()
-        defense_embed = self.player_2.defense_board.get_embed()
-        self.bot_attack_message = await self.bot_attack_message.edit(embed=attack_embed)
-        self.bot_defense_message = await self.bot_defense_message.edit(embed=defense_embed)
 
         if self._end_turn():
             return await self.end_game_(ctx)
@@ -302,8 +331,7 @@ class Game:
         """Sends a message indicating the last attack's outcome.
         
         Params:
-            game : Game
-                The game instance.
+        -------
             attack : bool
                 Whether or not the attack was successful.
             sunk : bool
@@ -326,13 +354,7 @@ class Game:
         await sleep(2)
 
     async def _handle_turn_message(self):
-        """Sends a message indicating whose turn it is.
-        
-        Params:
-        -------
-            game : Game
-                The current game instance
-        """
+        """Sends a message indicating whose turn it is."""
         if self.bot_player and self.attacker == self.player_2:
             self.turn_message = await self.turn_message.edit(content="It is now my turn!")
         else:
@@ -340,7 +362,7 @@ class Game:
                 content=f"{self.attacker.member.mention}, it is now your turn!")
 
         await sleep(3)
-    
+
     def _end_turn(self):
         """Checks if the game is over and ends it, or continues to the next turn otherwise."""
         if self._is_over():
