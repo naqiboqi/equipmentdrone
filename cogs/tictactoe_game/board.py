@@ -24,7 +24,7 @@ class Board:
 
     def is_full(self):
         """Returns whether or not the board is full."""
-        return not any([OPEN in self.grid[i]] for i in range(self.size))
+        return not any(OPEN in row for row in self.grid)
 
     def mark(self, y: int, x: int, symbol: str):
         """Marks the given location with the player's symbol.
@@ -40,21 +40,13 @@ class Board:
         """
         self.grid[y][x] = symbol
 
-    def get_embed(self, current_player: Player):
-        """Returns an embed the shows the current state of the board.
-        
-        Params:
-        -------
-            current_player : Player
-                The player whose turn it is.
-        """
+    def get_embed(self):
+        """Returns an embed the shows the current state of the board."""
         embed = discord.Embed(
-            title="Tic-Tac-Toe!",
+            title="🚩 Tic-Tac-Toe! 🚩",
             description=f"{self}",
-            color=discord.Color.red()
-        )
+            color=discord.Color.red())
 
-        embed.set_footer(text=f"Currently {current_player.member.name}'s turn.")
         return embed
 
     def __str__(self):

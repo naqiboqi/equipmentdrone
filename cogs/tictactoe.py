@@ -1,7 +1,4 @@
-
-
-"""
-This module implements a Battleship game cog for a Discord bot, designed to manage 
+"""This module implements a Battleship game cog for a Discord bot, designed to manage 
 Battleship gameplay and user interaction within a server (guild). It utilizes the 
 `discord.py` library to interact with Discord APIs, providing functionality for 
 game setup, turn-based play, and result tracking.
@@ -41,9 +38,8 @@ game setup, turn-based play, and result tracking.
 ### Dependencies:
 - **`discord`**: For interacting with Discord APIs and handling bot commands.
 - ** `typing`**: For optional type annotations.
-- **`asyncio`**: For sleep delays.
-- **`battleship_game`**: Game 
 """
+
 
 
 import discord
@@ -93,14 +89,14 @@ class TicTacToe(commands.Cog):
 
         game = Game(self.bot, player_1, player_2, bot_player)
         game.current_player = player_1
-        gameview = GameView(game)
-        game.view = gameview
-        
-        self.player_games[player_1.member.id] = gameview
-        self.player_games[player_2.member.id] = gameview
-        
+        view = GameView(game)
+        game.view = view
+
+        self.player_games[player_1.member.id] = game
+        self.player_games[player_2.member.id] = game
+
         embed = game.get_embed()
-        game.board_message = await ctx.send(embed=embed, view=gameview)
+        game.board_message = await ctx.send(embed=embed, view=view)
         game.turn_message = await ctx.send(f"{player_1.member.mention}, you are going first!")
 
     async def end_game(self, game: Game):
@@ -109,13 +105,13 @@ class TicTacToe(commands.Cog):
             message = "The game has ended in a draw."
         else:
             message = f"{winner.member.name} has won the game!"
-            
+
         await game.board_message.reply(message)
         await self.cleanup(game)
 
     async def cleanup(self, game: Game):
         await game.cleanup()
-        
+
         player_1 = game.player_1
         player_2 = game.player_2
         del self.player_games[player_1.member.id]

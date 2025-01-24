@@ -46,12 +46,12 @@ class Game:
         self.bot_player = bot_player
         self.current_player: Player = None
         self.winner: Player = None
-        
+
         self.board = Board()
         self.view = None
         self.board_message: discord.Message = None
         self.turn_message: discord.Message = None
-    
+
     def is_player_turn(self, member: discord.Member):
         """Returns whether or not it is the given player's turn.
         
@@ -76,7 +76,7 @@ class Game:
             0 <= y < self.board.size and
             0 <= x < self.board.size and
             self.board.grid[y][x] == OPEN)
-    
+
     def mark(self, y: int, x: int, symbol: str):
         """Checks if a location on the board is a valid location, and marks it.
         
@@ -92,13 +92,13 @@ class Game:
         if self._is_valid_loc(y, x):
             self.board.mark(y, x, symbol)
             return True
-            
+
         return False
-    
+
     def _is_bot_turn(self):
         """Returns whether or not it is the bot's turn, if the bot is in the game."""
         return self.bot_player and self.current_player == self.player_2.member
-        
+
     async def next_turn(self, y: int, x: int):
         """Checks the game's state to determine if the game should continue and move to the next turn.
         
@@ -113,14 +113,14 @@ class Game:
 
         await self.view.mark_button_tile(y, x, self.current_player.symbol)
         self.board_message = await self.board_message.edit(embed=embed, view=self.view)
-        
+
         state = self._check_game_state()
         if state == "win":
             self.winner = self.current_player
             return await self.bot.get_cog("TicTacToe").end_game(game=self)
         elif state == "draw":
             return await self.bot.get_cog("TicTacToe").end_game(game=self)
-        
+
         self.current_player = (
             self.player_2 if self.current_player == self.player_1.member
                 else self.player_1)
@@ -128,14 +128,14 @@ class Game:
         await self._handle_turn_message()
         if self._is_bot_turn():
             await self._bot_turn()
-            
+
     async def _bot_turn(self):
         """Represents the bot's turn, where it picks a random valid spot on the board."""
         board_size = self.board.size
         valid_locs = [
             (y, x) for y in range(board_size) for x in range(board_size) if self._is_valid_loc(y, x)
         ]
-        
+
         y, x = choice(valid_locs)
         self.board.mark(y, x, self.current_player.symbol)
         await self.next_turn(y, x)
@@ -183,7 +183,7 @@ class Game:
     async def cleanup(self):
         """Sends the final game state and disables the embed buttons."""
         await self.view.disable_all_tiles()
-        
+
         try:
             await self.turn_message.delete()
         except discord.errors.NotFound as e:
