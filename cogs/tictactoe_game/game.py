@@ -52,16 +52,6 @@ class Game:
         self.board_message: discord.Message = None
         self.turn_message: discord.Message = None
 
-    def is_player_turn(self, member: discord.Member):
-        """Returns whether or not it is the given player's turn.
-        
-        Params:
-        -------
-            member: discord.Member
-                The member object associated with the player to check.
-        """
-        return self.current_player == member
-    
     def _is_valid_loc(self, y: int, x: int):
         """Returns whether or not the location is valid.
         
@@ -94,6 +84,16 @@ class Game:
             return True
 
         return False
+
+    def is_player_turn(self, member: discord.Member):
+        """Returns whether or not it is the given player's turn.
+        
+        Params:
+        -------
+            member: discord.Member
+                The member object associated with the player to check.
+        """
+        return self.current_player == member
 
     def _is_bot_turn(self):
         """Returns whether or not it is the bot's turn, if the bot is in the game."""
