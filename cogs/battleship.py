@@ -64,7 +64,7 @@ class BattleShip(commands.Cog):
         player_games : dict[int, Game]
             Stores the games associated with each player.
     """
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.player_games: dict[int, Game] = {}
 
@@ -90,6 +90,9 @@ class BattleShip(commands.Cog):
         if (player_1.member.id in self.player_games or
             player_2.member.id in self.player_games):
             return await ctx.send("One of the players is already in a game!")
+
+        if player_1 == player_2:
+            return await ctx.send("You can't play against yourself!")
 
         game = Game(player_1, player_2, bot_player)
         self.player_games[player_1.member.id] = game

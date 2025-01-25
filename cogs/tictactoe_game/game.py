@@ -109,7 +109,7 @@ class Game:
             x : int
                 The `x` location on the board to place.
         """
-        embed = self.get_embed()
+        embed = self.board.get_embed()
 
         await self.view.mark_button_tile(y, x, self.current_player.symbol)
         self.board_message = await self.board_message.edit(embed=embed, view=self.view)
@@ -122,8 +122,7 @@ class Game:
             return await self.bot.get_cog("TicTacToe").end_game(game=self)
 
         self.current_player = (
-            self.player_2 if self.current_player == self.player_1.member
-                else self.player_1)
+            self.player_2 if self.current_player == self.player_1.member else self.player_1)
 
         await self._handle_turn_message()
         if self._is_bot_turn():
@@ -166,7 +165,7 @@ class Game:
             return "draw"
 
         return "ongoing"
-        
+
     async def _handle_turn_message(self):
         """Sends a message indicating whose turn it is."""
         if self._is_bot_turn():
@@ -176,10 +175,6 @@ class Game:
             self.turn_message = await self.turn_message.edit(
                 content=f"{self.current_player.member.mention}, it is now your turn!")
 
-    def get_embed(self):
-        """Returns an embed showing the current state of the board."""
-        return self.board.get_embed()
-    
     async def cleanup(self):
         """Sends the final game state and disables the embed buttons."""
         await self.view.disable_all_tiles()
