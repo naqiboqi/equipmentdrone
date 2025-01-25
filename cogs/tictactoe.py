@@ -100,6 +100,7 @@ class TicTacToe(commands.Cog):
         game.turn_message = await ctx.send(f"{player_1.member.mention}, you are going first!")
 
     async def end_game(self, game: Game):
+        """Sends the final state of the game cleans it up."""
         winner = game.winner
         if not winner:
             message = "The game has ended in a draw."
@@ -110,6 +111,13 @@ class TicTacToe(commands.Cog):
         await self.cleanup(game)
 
     async def cleanup(self, game: Game):
+        """Cleans up the game instance and delete it from the stored player games.
+        
+        Params:
+        -------
+            game : Game
+                The game that ended.
+        """
         await game.cleanup()
 
         player_1 = game.player_1
