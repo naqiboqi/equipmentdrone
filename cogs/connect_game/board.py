@@ -11,6 +11,12 @@ class Board():
         self.size = size
         self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
 
+    def __getitem__(self, index: int):
+        return self.grid[index]
+
+    def __setitem__(self, index: int, val: str):
+        self.grid[index] = val
+
     def __str__(self):
         """Returns a string representation of the board."""
         board = ""
@@ -46,21 +52,21 @@ class Board():
 
         try:
             return next(row for row in range(self.size - 1, -1, -1) 
-                if self.grid[row][col] == OPEN)
+                if self[row][col] == OPEN)
         except StopIteration:
             raise IndexError(f"The column {col} is full.")
 
-    def drop(self, col: int, open_row: int, symbol: str):
+    def drop(self, row: int, col: int, symbol: str):
         """Drops a piece to the lowest position in the given column.
         
         Params:
         -------
-            col : int
-                The column to drop into.
             open_row : int
                 The lowest open row in the board.
+            col : int
+                The column to drop into.
             symbol : str
                 The player's symbol.
         """
-        self.grid[open_row][col] = symbol
+        self[row][col] = symbol
 
