@@ -11,8 +11,25 @@ class Board():
         self.size = size
         self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
 
+    def __str__(self):
+        """Returns a string representation of the board."""
+        board = ""
+        for row in self.grid:
+            board += f"{''.join(col for col in row)}\n"
+
+        return board
+
+    @property
+    def embed(self):
+        """An embed the shows the current state of the board."""
+        return discord.Embed(
+            title="Connect Four!",
+            description=f"{self}",
+            color=discord.Color.red())
+
+    @property
     def is_full(self):
-        """Returns whether or not the board is full."""
+        """If the board is full."""
         return not any(OPEN in row for row in self.grid)
 
     def get_next_open(self, col: int):
@@ -47,17 +64,3 @@ class Board():
         """
         self.grid[open_row][col] = symbol
 
-    def get_embed(self):
-        """Returns an embed the shows the current state of the board."""
-        return discord.Embed(
-            title="Connect Four!",
-            description=f"{self}",
-            color=discord.Color.red())
-
-    def __str__(self):
-        """Returns a string representation of the board."""
-        board = ""
-        for row in self.grid:
-            board += f"{''.join(col for col in row)}\n"
-
-        return board
