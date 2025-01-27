@@ -22,8 +22,33 @@ class Board:
         self.size = size
         self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
 
+    def __getitem__(self, index: int):
+        return self.grid[index]
+
+    def __setitem__(self, index: int, val: str):
+        self.grid[index] = val
+
+    def __str__(self):
+        """Returns a string representation of the board."""
+        board = ""
+        for row in self.grid:
+            board += f"{''.join(row)}\n"
+
+        return board
+
+    @property
+    def embed(self):
+        """An embed that shows the current state of the board."""
+        embed = discord.Embed(
+            title="🚩 Tic-Tac-Toe! 🚩",
+            description=f"{self}",
+            color=discord.Color.red())
+
+        return embed
+
+    @property
     def is_full(self):
-        """Returns whether or not the board is full."""
+        """If the board is full."""
         return not any(OPEN in row for row in self.grid)
 
     def mark(self, y: int, x: int, symbol: str):
@@ -38,21 +63,4 @@ class Board:
             symbol : str
                 The player's symbol to place.
         """
-        self.grid[y][x] = symbol
-
-    def get_embed(self):
-        """Returns an embed the shows the current state of the board."""
-        embed = discord.Embed(
-            title="🚩 Tic-Tac-Toe! 🚩",
-            description=f"{self}",
-            color=discord.Color.red())
-
-        return embed
-
-    def __str__(self):
-        """Returns a string representation of the board."""
-        board = ""
-        for row in self.grid:
-            board += f"{''.join(row)}\n"
-
-        return board
+        self[y][x] = symbol
