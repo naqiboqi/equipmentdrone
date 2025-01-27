@@ -10,11 +10,11 @@ class Board():
     def __init__(self, size: int=8):
         self.size = size
         self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
-        
+
     def is_full(self):
         """Returns whether or not the board is full."""
         return not any(OPEN in row for row in self.grid)
-    
+
     def get_next_open(self, col: int):
         """Returns the next open row in the column, closest to the bottom of the board.
         
@@ -41,7 +41,7 @@ class Board():
             col : int
                 The column to drop into.
             open_row : int
-                The lowest opem row in the board.
+                The lowest open row in the board.
             symbol : str
                 The player's symbol.
         """
@@ -51,7 +51,7 @@ class Board():
         """Returns an embed the shows the current state of the board."""
         return discord.Embed(
             title="Connect Four!",
-            description={self},
+            description=f"{self}",
             color=discord.Color.red())
 
     def __str__(self):
