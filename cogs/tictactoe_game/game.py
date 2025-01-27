@@ -52,6 +52,38 @@ class Game:
         self.board_message: discord.Message = None
         self.turn_message: discord.Message = None
 
+    @property
+    def game_state(self):
+        """The current state of the board, determines if the game should end.
+        
+        If the current player has won, returns `win`. If the board is full, returns `draw`.
+        Otherwise, returns `ongoing` and the game continues.
+        """
+        board_size = self.board.size
+        symbol = self.current_player.symbol
+
+        for y in range(board_size):
+            if all(self.board[y][x] == symbol for x in range(board_size)):
+                return "win"
+        for x in range(board_size):
+            if all(self.board[y][x] == symbol for y in range(board_size)):
+                return "win"
+
+        if all(self.board[i][i] == symbol for i in range(board_size)):
+            return "win"
+        if all(self.board[i][board_size - i - 1] == symbol for i in range(board_size)):
+            return "win"
+
+        if self.board.is_full:
+            return "draw"
+
+        return "ongoing"
+
+    @property
+    def is_bot_turn(self):
+        """If it is the bot's turn."""
+        return self.bot_player and self.current_player == self.player_2.member
+
     def _is_valid_loc(self, y: int, x: int):
         """Returns whether or not the location is valid.
         
@@ -65,7 +97,7 @@ class Game:
         return (
             0 <= y < self.board.size and
             0 <= x < self.board.size and
-            self.board.grid[y][x] == OPEN)
+            self.board[y][x] == OPEN)
 
     def mark(self, y: int, x: int, symbol: str):
         """Checks if a location on the board is a valid location, and marks it.
@@ -95,10 +127,6 @@ class Game:
         """
         return self.current_player == member
 
-    def _is_bot_turn(self):
-        """Returns whether or not it is the bot's turn, if the bot is in the game."""
-        return self.bot_player and self.current_player == self.player_2.member
-
     async def next_turn(self, y: int, x: int):
         """Checks the game's state to determine if the game should continue and move to the next turn.
         
@@ -109,8 +137,7 @@ class Game:
             x : int
                 The `x` location on the board to place.
         """
-        embed = self.board.get_embed()
-
+        embed = self.board.embed
         await self.view.mark_button_tile(y, x, self.current_player.symbol)
         self.board_message = await self.board_message.edit(embed=embed, view=self.view)
 
@@ -125,10 +152,10 @@ class Game:
             self.player_2 if self.current_player == self.player_1.member else self.player_1)
 
         await self._handle_turn_message()
-        if self._is_bot_turn():
-            await self._bot_turn()
+        if self.is_bot_turn:
+            await self._do_bot_turn()
 
-    async def _bot_turn(self):
+    async def _do_bot_turn(self):
         """Represents the bot's turn, where it picks a random valid spot on the board."""
         board_size = self.board.size
         valid_locs = [
@@ -138,33 +165,6 @@ class Game:
         y, x = choice(valid_locs)
         self.board.mark(y, x, self.current_player.symbol)
         await self.next_turn(y, x)
-            
-    def _check_game_state(self):
-        """Checks if the current state of the board to determine if the game should end.
-        
-        If the current player has won, returns `win`. If the board is full, returns `draw`.
-        Otherwise, returns `ongoing` and the game continues.
-        """
-        board_size = self.board.size
-        grid = self.board.grid
-        symbol = self.current_player.symbol
-
-        for y in range(board_size):
-            if all(grid[y][x] == symbol for x in range(board_size)):
-                return "win"
-        for x in range(board_size):
-            if all(grid[y][x] == symbol for y in range(board_size)):
-                return "win"
-
-        if all(grid[i][i] == symbol for i in range(board_size)):
-            return "win"
-        if all(grid[i][board_size - i - 1] == symbol for i in range(board_size)):
-            return "win"
-
-        if self.board.is_full():
-            return "draw"
-
-        return "ongoing"
 
     async def _handle_turn_message(self):
         """Sends a message indicating whose turn it is."""
@@ -184,7 +184,7 @@ class Game:
         except discord.errors.NotFound as e:
             print(f"The turn message was not found: {e}")
 
-        embed = self.get_embed()
+        embed = self.board.embed
         embed.set_footer(text="This game has ended.")
         
         self.board_message = await self.board_message.edit(embed=embed, view=self.view)
