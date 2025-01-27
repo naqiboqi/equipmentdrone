@@ -76,7 +76,7 @@ class ConnectFour(commands.Cog):
             return await ctx.send("Nice try, but you are not in the game!", delete_after=10)
 
         end_message = await ctx.send("Ending the game in 10 seconds, reply `❌` to cancel.")
-        
+
         def check(reaction: discord.Reaction, user):
             return (reaction.message.id == end_message.id and
                 str(reaction.emoji) == "❌" and

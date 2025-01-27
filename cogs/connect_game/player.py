@@ -8,5 +8,15 @@ class Player:
         self.member = member
         self.symbol = symbol
 
+    @property
+    def mention(self):
+        """Mention the player."""
+        return self.member.mention
+
+    @property
+    def name(self):
+        """The player's Discord name."""
+        return self.member.name
+
     def __eq__(self, other: "Player"):
         return self.member.id == other.member.id
