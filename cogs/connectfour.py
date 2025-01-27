@@ -1,9 +1,9 @@
 import discord
 
-from asyncio import sleep
+import asyncio
 from discord.ext import commands
 from typing import Optional
-from connect_game import Game, Player
+from .connect_game import Game, Player
 
 
 
@@ -14,10 +14,22 @@ class ConnectFour(commands.Cog):
 
     @commands.hybrid_command(name="connectfour", aliases=["c4"])
     async def _start(self, ctx: commands.Context, member: Optional[discord.Member]=None):
-        player_1 = Player(discord.Color.blue(), ctx.author)
+        """Starts a game of Connect Four between two players, or against me!
+        
+        Player 1 will always go first. If a second player is not specified, then player 1
+        will play against the bot. Players may only participate in one game at a time.
+
+        Params:
+        -------
+            ctx: commands.Context
+                The context for the current command.
+            member : discord.Member
+                The other Discord `member` to play against. If `None`, plays agains the bot.
+        """
+        player_1 = Player(discord.Color.blue(), ctx.author, "🟪")
 
         bot_player = member is None
-        player_2 = Player(discord.Color.red(), member if member else self.bot.user)
+        player_2 = Player(discord.Color.red(), member if member else self.bot.user, "🟥")
 
         if (player_1.member.id in self.player_games or 
             player_2.member.id in self.player_games):
@@ -26,13 +38,21 @@ class ConnectFour(commands.Cog):
         if player_1 == player_2:
             return await ctx.send("You can't play against yourself!")
 
-        game = Game(player_1, player_2, bot_player)
+        game = Game(self.bot, player_1, player_2, bot_player)
         self.player_games[player_1.member.id] = game
         self.player_games[player_2.member.id] = game
         await game.setup(ctx)
 
     @commands.hybrid_command(name="drop")
     async def _drop_piece(self, ctx: commands.Context, column: int):
+        """Drops a piece in the chosen column.
+        
+        Params:
+            ctx : commands.Context
+                The context for the current command.
+            column : int
+                The column to drop in.
+        """
         player_id = ctx.author.id
         game = self.player_games.get(player_id)
 
@@ -40,26 +60,36 @@ class ConnectFour(commands.Cog):
             return await ctx.send("You are not in the game!", delete_after=10)
 
         await game.player_turn(ctx, column, player_id)
-        
-    # @commands.hybrid_command(name="endconnectfour")
-    # async def _end(self, ctx: commands.Context):
-    #     player_id = ctx.author.id
-    #     game = self.player_games.get(player_id)
-        
-    #     if not game:
-    #         return await ctx.send("Nice try, but you are not in the game!", delete_after=10)
 
-    #     end_message = await ctx.send("Ending the game in 10 seconds, reply `❌` to cancel.")
+    @commands.hybrid_command(name="endconnectfour")
+    async def _end(self, ctx: commands.Context):
+        """Ends the current game. Can be cancelled up to 10 seconds afterwards.
         
-    #     timer = 10
-        
-    #     while timer >= 0:
-    #         sleep(1)
-    #         timer -= 1
-            
-    #         if end_message.reply()
-    #     else:
-            
+        Params:
+            ctx : commands.Context
+                The context for the current command.
+        """
+        player_id = ctx.author.id
+        game = self.player_games.get(player_id)
+
+        if not game:
+            return await ctx.send("Nice try, but you are not in the game!", delete_after=10)
+
+        end_message = await ctx.send("Ending the game in 10 seconds, reply `❌` to cancel.")
+
+        timer = 10
+        while timer >= 0:
+            for reaction in end_message.reactions:
+                ids = [user.id async for user in reaction.users()]
+                if reaction.emoji == "❌" and set(ids & self.player_games.keys()):
+                    await end_message.delete()
+                    return await ctx.send("The game shall continue!", delete_after=10)
+
+            await asyncio.sleep(1)
+            timer -= 1
+
+        await end_message.delete()
+        await self.end_game(game)
 
     async def end_game(self, game: Game):
         """Sends the final state of the game and cleans it up."""
@@ -86,3 +116,7 @@ class ConnectFour(commands.Cog):
         player_2 = game.player_2
         del self.player_games[player_1.member.id]
         del self.player_games[player_2.member.id]
+
+
+async def setup(bot: commands.Bot):
+    await bot.add_cog(ConnectFour(bot))
