@@ -76,20 +76,20 @@ class ConnectFour(commands.Cog):
             return await ctx.send("Nice try, but you are not in the game!", delete_after=10)
 
         end_message = await ctx.send("Ending the game in 10 seconds, reply `❌` to cancel.")
+        
+        def check(reaction: discord.Reaction, user):
+            return (reaction.message.id == end_message.id and
+                str(reaction.emoji) == "❌" and
+                user.id in self.player_games)
 
-        timer = 10
-        while timer >= 0:
-            for reaction in end_message.reactions:
-                ids = [user.id async for user in reaction.users()]
-                if reaction.emoji == "❌" and set(ids & self.player_games.keys()):
-                    await end_message.delete()
-                    return await ctx.send("The game shall continue!", delete_after=10)
+        try:
+            await self.bot.wait_for("reaction_add", check=check, timeout=10)
+            await end_message.delete()
+            return await ctx.send("The game shall continue!", delete_after=10)
 
-            await asyncio.sleep(1)
-            timer -= 1
-
-        await end_message.delete()
-        await self.end_game(game)
+        except asyncio.TimeoutError:
+            await end_message.delete()
+            await self.end_game(game)
 
     async def end_game(self, game: Game):
         """Sends the final state of the game and cleans it up."""
