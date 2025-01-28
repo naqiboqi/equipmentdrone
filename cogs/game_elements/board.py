@@ -1,5 +1,3 @@
-OPEN = "⏹️"
-
 
 
 class Board:
@@ -12,9 +10,10 @@ class Board:
         grid : list[list[str]]
             A 2D grid representing the board.
     """
-    def __init__(self, size: int=8):
+    def __init__(self, size: int=8, default: str="⏹️"):
+        self.default = default
         self.size = size
-        self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
+        self.grid = [[default for _ in range(self.size)] for _ in range(self.size)]
 
     def __getitem__(self, index: int):
         return self.grid[index]
@@ -33,4 +32,4 @@ class Board:
     @property
     def is_full(self):
         """If the board is full."""
-        return not any(OPEN in row for row in self.grid)
+        return not any(self.default in row for row in self.grid)

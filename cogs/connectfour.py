@@ -67,7 +67,6 @@ class ConnectFour(commands.Cog):
         """
         player_id = ctx.author.id
         game = self.player_games.get(player_id)
-
         if not game:
             return await ctx.send("You are not in the game!", delete_after=10)
 

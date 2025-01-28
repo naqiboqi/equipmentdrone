@@ -1,7 +1,7 @@
 
 import random
 
-from .connectfourboard import ConnecFourBoard
+from .connectfourboard import ConnectFourBoard
 from .gameutils import is_winner
 
 
@@ -11,7 +11,7 @@ OPEN = "⏹️"
 
 
 class BotLogic:
-    def __init__(self, board: ConnecFourBoard, symbol: str):
+    def __init__(self, board: ConnectFourBoard, symbol: str):
         self.board = board
         self.symbol = symbol
 

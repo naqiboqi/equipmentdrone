@@ -2,7 +2,7 @@ import discord
 
 from asyncio import sleep
 from discord.ext import commands
-from .connectfourboard import ConnecFourBoard
+from .connectfourboard import ConnectFourBoard
 from .connectfourplayer import ConnectFourPlayer
 from .botlogic import BotLogic
 from .gameutils import is_winner
@@ -27,7 +27,7 @@ class Game:
         self.bot = bot
         self.player_1 = player_1
         self.player_2 = player_2
-        self.board = ConnecFourBoard()
+        self.board = ConnectFourBoard()
 
         if self.player_2.is_bot:
             self.bot_logic = BotLogic(self.board, self.player_2.symbol)

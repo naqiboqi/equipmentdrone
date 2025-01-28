@@ -3,11 +3,8 @@ import discord
 from ..game_elements import Board
 
 
-OPEN = "⏹️"
 
-
-
-class ConnecFourBoard(Board):
+class ConnectFourBoard(Board):
     def __init__(self, size: int=8):
         super().__init__(size=size)
 
@@ -33,7 +30,7 @@ class ConnecFourBoard(Board):
 
         try:
             return next(row for row in range(self.size - 1, -1, -1) 
-                if self[row][col] == OPEN)
+                if self[row][col] == self.default)
         except StopIteration:
             raise IndexError(f"The column {col} is full.")
 

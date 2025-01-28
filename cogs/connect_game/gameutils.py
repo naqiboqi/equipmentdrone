@@ -1,11 +1,11 @@
 """Includes the `is_winner(board, symbol)` function to check if any win conditions are met."""
 
 
-from .connectfourboard import ConnecFourBoard
+from .connectfourboard import ConnectFourBoard
 
 
 
-def is_winner(board: ConnecFourBoard, symbol: str):
+def is_winner(board: ConnectFourBoard, symbol: str):
     """Returns whether or not the given symbol has a winning sequence.
     
     Params:
