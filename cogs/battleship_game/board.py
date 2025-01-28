@@ -71,10 +71,53 @@ class Board():
     def __init__(self, size: int=10):
         self.size = size
         self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
-    
+
+    def __getitem__(self, index: int):
+        return self.grid[index]
+
+    def __setitem__(self, index: int, val: str):
+        self.grid[index] = val
+
+    def __str__(self):
+        """Returns a string representation of the board with labeled positions."""
+        numbers = [
+            emojis.get("one_border"),
+            emojis.get("two_border"),
+            emojis.get("three_border"),
+            emojis.get("four_border"),
+            emojis.get("five_border"),
+            emojis.get("six_border"),
+            emojis.get("seven_border"),
+            emojis.get("eight_border"),
+            emojis.get("nine_border"),
+            emojis.get("ten_border"),
+        ]
+
+        letters = [
+            emojis.get("board_a"),
+            emojis.get("board_b"),
+            emojis.get("board_c"),
+            emojis.get("board_d"),
+            emojis.get("board_e"),
+            emojis.get("board_f"),
+            emojis.get("board_g"),
+            emojis.get("board_h"),
+            emojis.get("board_i"),
+            emojis.get("board_j"),
+        ]
+
+        board = f"{emojis.get('board_tl')}{''.join(numbers)}{emojis.get('board_tr')}\n"
+        for i in range(self.size):
+            row = self.grid[i]
+            board += f"{letters[i]}{''.join(spot for spot in row)}{letters[i]}\n"
+
+        board += f"{emojis.get('board_bl')}{''.join(numbers)}{emojis.get('board_br')}\n"
+        return board
+
     def clear_board(self):
+        """Clears the board of all ships."""
         self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
-    
+
     def _is_valid_loc(self, ship: Ship, y: int, x: int, direction: str):
         """Returns whether or not the given location is a valid placement for a ship.
         
@@ -84,11 +127,11 @@ class Board():
         Params:
         -------
             ship : Ship
-                The current ship to check
+                The current ship to check.
             y : int
-                The y coordinate to test the ship
+                The y coordinate to test the ship.
             x : int
-                The x coordinate to test the ship
+                The x coordinate to test the ship.
             direction : 
                 str The ships's direction, either vertical or horizontal.
         """
@@ -139,7 +182,7 @@ class Board():
         """
         rotate_point = ship.locs[0]
         y, x = rotate_point
-        
+
         dy, dx = (0, 1) if direction == "H" else (1, 0)
         for i in range(ship.size): 
             ny, nx = y + dy * i, x + dx * i
@@ -157,7 +200,6 @@ class Board():
         -------
             ship : Ship
                 The current ship to check.
-                
             fleet: list[Ship]
                 The ships to check against.
         """
@@ -166,50 +208,13 @@ class Board():
                 continue
             if set(ship.locs) & set(other_ship.locs):
                 return other_ship
-            
-        return None
 
-    def __str__(self):
-        """Returns a string representation of the board with labeled positions."""
-        numbers = [
-            emojis.get("one_border"),
-            emojis.get("two_border"),
-            emojis.get("three_border"),
-            emojis.get("four_border"),
-            emojis.get("five_border"),
-            emojis.get("six_border"),
-            emojis.get("seven_border"),
-            emojis.get("eight_border"),
-            emojis.get("nine_border"),
-            emojis.get("ten_border"),
-        ]
-        
-        letters = [
-            emojis.get("board_a"),
-            emojis.get("board_b"),
-            emojis.get("board_c"),
-            emojis.get("board_d"),
-            emojis.get("board_e"),
-            emojis.get("board_f"),
-            emojis.get("board_g"),
-            emojis.get("board_h"),
-            emojis.get("board_i"),
-            emojis.get("board_j")
-        ]
-        
-        board = f"{emojis.get('board_tl')}{''.join(numbers)}{emojis.get('board_tr')}\n"
-        for i in range(self.size):
-            row = self.grid[i]
-            board += f"{letters[i]}{''.join(spot for spot in row)}{letters[i]}\n"
-        
-        board += f"{emojis.get('board_bl')}{''.join(numbers)}{emojis.get('board_br')}\n"
-        return board
+        return None
 
 
 
 class DefenseBoard(Board):
-    """
-    A specialized version of the `Board` class that represents a player's fleet board.
+    """A specialized version of the `Board` class that represents a player's fleet board.
 
     This class manages the placement, movement, and rotation of ships during the setup phase
     of the game. It also provides methods to confirm ship placements and to generate visual 
@@ -217,6 +222,23 @@ class DefenseBoard(Board):
     """
     def __init__(self):
         super().__init__(size=10)
+
+    @property
+    def embed(self):
+        """An embed that shows the player's finalized ship placements on the board."""
+        embed = discord.Embed(
+            title="These are your ships. Be sure to guard them with your life!",
+            description=f"{self}",
+            color=discord.Color.dark_magenta())
+
+        embed.add_field(
+            name="For you to keep track....",
+            value="""
+            ⏹️: Healthy ship sections
+            
+            🟥: Damaged ship sections""")
+
+        return embed
 
     def first_placement(self, ship: Ship):
         """Places the ship on a random valid location on the board.
@@ -244,12 +266,12 @@ class DefenseBoard(Board):
                 If the placing player is a bot or not.
         """
         self.clear_board()
-        
+
         for ship in fleet:
             ship.locs = []
-            ship.placed_before = False
             ship.confirmed = False
-            
+            ship.placed_before = False
+
             while not ship.placed_before and not ship.confirmed:
                 y, x = random.randint(0, self.size - 1), random.randint(0, self.size - 1)
                 direction = random.choice(["H", "V"])
@@ -376,7 +398,7 @@ class DefenseBoard(Board):
             self.grid[y][x] = SHIP_NOT_CONFIRMED
 
         ship.current_ship = False
-        
+
     def reset_ship(self, ship: Ship):
         """Resets the positions of the ship."""
         ship.placed_before = False
@@ -396,34 +418,14 @@ class DefenseBoard(Board):
         embed = discord.Embed(
             title="Place your ships!",
             description=f"{self}",
-            color=discord.Color.fuchsia(),
-        )
+            color=discord.Color.fuchsia())
 
         embed.add_field(
             name=f"{'Currently placing: ' if current_ship else 'Select a ship!'}",
-            value=f"{current_ship if current_ship else '....'}"
-        )
+            value=f"{current_ship if current_ship else '....'}")
 
         embed.set_footer(
             text="Use the buttons to move the current ship, then click ✅ when you are done!")
-
-        return embed
-
-    def get_embed(self):
-        """Returns an embed that shows the player's finalized ship placements on the board."""
-        embed = discord.Embed(
-            title="These are your ships. Be sure to guard them with your life!",
-            description=f"{self}",
-            color=discord.Color.dark_magenta()
-        )
-
-        embed.add_field(
-            name="For you to keep track....",
-            value="""
-            ⏹️: Healthy ship sections
-            
-            🟥: Damaged ship sections
-            """)
 
         return embed
 
@@ -440,22 +442,21 @@ class AttackBoard(Board):
     def __init__(self):
         super().__init__(size=10)
 
-    def get_embed(self):
-        """Returns an embed that shows the player's attacking board that keeps track of their
+    @property
+    def embed(self):
+        """An embed that shows the player's attacking board that keeps track of their
         hits and misses on enemy ships.
         """
         embed = discord.Embed(
             title="These are your hits and misses. Try not to miss too much!",
             description=f"{self}",
-            color=discord.Color.red()
-        )
+            color=discord.Color.red())
 
         embed.add_field(
             name="For you to keep track....",
             value="""
             🟥: Hits on enemy ships
             
-            ⬜: Misses on enemy ships
-            """)
+            ⬜: Misses on enemy ships""")
 
         return embed
