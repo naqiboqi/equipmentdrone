@@ -5,6 +5,7 @@
 /cogs/__pycache__
 /cogs/battleship_game/__pycache__
 /cogs/connect_game/__pycache__
+/cogs/game_elements/__pycache__
 /cogs/tictactoe_game/__pycache__
 /cogs/utils/__pycache__
 /cogs/video_load/__pycache__
