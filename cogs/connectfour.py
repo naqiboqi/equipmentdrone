@@ -3,11 +3,20 @@ import discord
 import asyncio
 from discord.ext import commands
 from typing import Optional
-from .connect_game import Game, Player
+from .connect_game import ConnectFourPlayer, Game
 
 
 
 class ConnectFour(commands.Cog):
+    """Commands to represent controls for starting and playing a Connect Four game.
+    
+    Attributes:
+    ----------
+        bot : commands.Bot
+            The current bot instance.
+        player_games : dict[int, Game]
+            Stores the games associated with each player.
+    """
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.player_games: dict[int, Game] = {}
@@ -26,21 +35,24 @@ class ConnectFour(commands.Cog):
             member : discord.Member
                 The other Discord `member` to play against. If `None`, plays agains the bot.
         """
-        player_1 = Player(discord.Color.blue(), ctx.author, "🟪")
+        player_1 = ConnectFourPlayer(member=ctx.author, symbol="🟪")
 
-        bot_player = member is None
-        player_2 = Player(discord.Color.red(), member if member else self.bot.user, "🟥")
+        is_bot = member is None
+        player_2 = ConnectFourPlayer(
+            member=member if not is_bot else self.bot.user, 
+            symbol="🟥", 
+            is_bot=is_bot)
 
-        if (player_1.member.id in self.player_games or 
-            player_2.member.id in self.player_games):
+        if (player_1.id in self.player_games or 
+            player_2.id in self.player_games):
             return await ctx.send("One of the players is in a game!")
 
         if player_1 == player_2:
             return await ctx.send("You can't play against yourself!")
 
-        game = Game(self.bot, player_1, player_2, bot_player)
-        self.player_games[player_1.member.id] = game
-        self.player_games[player_2.member.id] = game
+        game = Game(self.bot, player_1, player_2)
+        self.player_games[player_1.id] = game
+        self.player_games[player_2.id] = game
         await game.setup(ctx)
 
     @commands.hybrid_command(name="drop")
@@ -76,7 +88,6 @@ class ConnectFour(commands.Cog):
             return await ctx.send("Nice try, but you are not in the game!", delete_after=10)
 
         end_message = await ctx.send("Ending the game in 10 seconds, reply `❌` to cancel.")
-
         def check(reaction: discord.Reaction, user):
             return (reaction.message.id == end_message.id and
                 str(reaction.emoji) == "❌" and

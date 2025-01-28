@@ -1,29 +1,15 @@
 import discord
 
+from ..game_elements import Board
 
 
 OPEN = "⏹️"
 
 
 
-class Board():
+class ConnecFourBoard(Board):
     def __init__(self, size: int=8):
-        self.size = size
-        self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
-
-    def __getitem__(self, index: int):
-        return self.grid[index]
-
-    def __setitem__(self, index: int, val: str):
-        self.grid[index] = val
-
-    def __str__(self):
-        """Returns a string representation of the board."""
-        board = ""
-        for row in self.grid:
-            board += f"{''.join(col for col in row)}\n"
-
-        return board
+        super().__init__(size=size)
 
     @property
     def embed(self):
@@ -32,11 +18,6 @@ class Board():
             title="Connect Four!",
             description=f"{self}",
             color=discord.Color.red())
-
-    @property
-    def is_full(self):
-        """If the board is full."""
-        return not any(OPEN in row for row in self.grid)
 
     def get_next_open(self, col: int):
         """Returns the next open row in the column, closest to the bottom of the board.
@@ -69,4 +50,3 @@ class Board():
                 The player's symbol.
         """
         self[row][col] = symbol
-
