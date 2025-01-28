@@ -43,6 +43,7 @@ import random
 
 from typing import Optional
 from .constants import emojis
+from ..game_elements import Board
 from .ship import Ship
 
 
@@ -57,26 +58,20 @@ SHIP_NOT_CONFIRMED = "🟥"
 """Represents a ship that was placed, but not finalized."""
 
 
-class Board():
-    """Representation of a player's board in a game, serves as a base for the board's state.
+
+class BattleshipBoard(Board):
+    """Base representation of a Battleship Board.
     
     Attributes:
     ----------
-        `size` : int
+        size : int
             The size of the board (in both width and height).
-        `grid` : list[list[str]]
+        grid : list[list[str]]
             A 2D grid representing the board. Each cell contains a symbol to indicate 
             its state (e.g., open water, a ship, or a hit/miss).
     """
-    def __init__(self, size: int=10):
-        self.size = size
-        self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
-
-    def __getitem__(self, index: int):
-        return self.grid[index]
-
-    def __setitem__(self, index: int, val: str):
-        self.grid[index] = val
+    def __init__(self, size: int=10, default: str=OPEN):
+        super().__init__(size=size, default=default)
 
     def __str__(self):
         """Returns a string representation of the board with labeled positions."""
@@ -114,11 +109,7 @@ class Board():
         board += f"{emojis.get('board_bl')}{''.join(numbers)}{emojis.get('board_br')}\n"
         return board
 
-    def clear_board(self):
-        """Clears the board of all ships."""
-        self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
-
-    def _is_valid_loc(self, ship: Ship, y: int, x: int, direction: str):
+    def is_valid_loc(self, ship: Ship, y: int, x: int, direction: str):
         """Returns whether or not the given location is a valid placement for a ship.
         
         Is used for the initial random placement. 
@@ -145,6 +136,26 @@ class Board():
                 return False
 
         return True
+
+
+
+class PlacementBoard(BattleshipBoard):
+    """Representation of a player's board in a game, serves as a base for the board's state.
+    
+    Attributes:
+    ----------
+        size : int
+            The size of the board (in both width and height).
+        grid : list[list[str]]
+            A 2D grid representing the board. Each cell contains a symbol to indicate 
+            its state (e.g., open water, a ship, or a hit/miss).
+    """
+    def __init__(self):
+        super().__init__()
+
+    def clear_board(self):
+        """Clears the board of all ships."""
+        self.grid = [[OPEN for _ in range(self.size)] for _ in range(self.size)]
 
     def is_valid_move_loc(self, ship: Ship, dy: int=0, dx: int=0):
         """Returns whether or not the given movement will result be a location for a ship.
@@ -191,7 +202,7 @@ class Board():
 
         return True
 
-    def is_valid_confirm_loc(self, ship: Ship, fleet: list[Ship]):
+    def check_for_ship_conflicts(self, ship: Ship, fleet: list[Ship]):
         """Checks to make sure that the confirming ship does not intersect another ship.
         
         If there is an intersection, returns that ship, or `None` otherwise.
@@ -210,35 +221,6 @@ class Board():
                 return other_ship
 
         return None
-
-
-
-class DefenseBoard(Board):
-    """A specialized version of the `Board` class that represents a player's fleet board.
-
-    This class manages the placement, movement, and rotation of ships during the setup phase
-    of the game. It also provides methods to confirm ship placements and to generate visual 
-    representations of the fleet for the player while the game is in progress.
-    """
-    def __init__(self):
-        super().__init__(size=10)
-
-    @property
-    def embed(self):
-        """An embed that shows the player's finalized ship placements on the board."""
-        embed = discord.Embed(
-            title="These are your ships. Be sure to guard them with your life!",
-            description=f"{self}",
-            color=discord.Color.dark_magenta())
-
-        embed.add_field(
-            name="For you to keep track....",
-            value="""
-            ⏹️: Healthy ship sections
-            
-            🟥: Damaged ship sections""")
-
-        return embed
 
     def first_placement(self, ship: Ship):
         """Places the ship on a random valid location on the board.
@@ -275,7 +257,7 @@ class DefenseBoard(Board):
             while not ship.placed_before and not ship.confirmed:
                 y, x = random.randint(0, self.size - 1), random.randint(0, self.size - 1)
                 direction = random.choice(["H", "V"])
-                if self._is_valid_loc(ship, y, x, direction):
+                if self.is_valid_loc(ship, y, x, direction):
                     self._place_ship(ship, y, x, direction, bot_player)
                     ship.placed_before = True
 
@@ -392,7 +374,7 @@ class DefenseBoard(Board):
         Params:
         -------
             ship : Ship
-                The ship to deselect
+                The ship to deselect.
         """
         for y, x in ship.locs:
             self.grid[y][x] = SHIP_NOT_CONFIRMED
@@ -413,7 +395,7 @@ class DefenseBoard(Board):
         Params:
         -------
             current_ship : Ship
-                The currently selected ship
+                The currently selected ship.
         """
         embed = discord.Embed(
             title="Place your ships!",
@@ -431,16 +413,66 @@ class DefenseBoard(Board):
 
 
 
-class AttackBoard(Board):
+class DefenseBoard(BattleshipBoard):
+    """A specialized version of the `Board` class that represents a player's fleet board.
+
+    This class manages the placement, movement, and rotation of ships during the setup phase
+    of the game. It also provides methods to confirm ship placements and to generate visual 
+    representations of the fleet for the player while the game is in progress.
+    
+    Attributes:
+    ----------
+        size : int
+            The size of the board (in both width and height).
+        grid : list[list[str]]
+            A 2D grid representing the board. Each cell contains a symbol to indicate 
+            its state (e.g., open water, a ship, or a hit/miss).
+    """
+    def __init__(self):
+        super().__init__()
+
+    @property
+    def embed(self):
+        """An embed that shows the player's fleet on the board."""
+        embed = discord.Embed(
+            title="These are your ships. Be sure to guard them with your life!",
+            description=f"{self}",
+            color=discord.Color.dark_magenta())
+
+        embed.add_field(
+            name="For you to keep track....",
+            value="""
+            ⏹️: Healthy ship sections
+            
+            🟥: Damaged ship sections""")
+
+        return embed
+
+    def from_placement_board(self, placement_board: PlacementBoard):
+        for i in range(self.size):
+            for j in range(self.size):
+                self[i][j] = placement_board[i][j]
+
+
+
+class AttackBoard(BattleshipBoard):
     """
     A specialized version of the `Board` class that represents a player's attack board.
 
     This class tracks hits and misses on the opponent's fleet, updating the board 
     state based on the results of each attack. It is used during the gameplay phase 
     to visualize the progress of the game.
+    
+    Attributes:
+    ----------
+        size : int
+            The size of the board (in both width and height).
+        grid : list[list[str]]
+            A 2D grid representing the board. Each cell contains a symbol to indicate 
+            its state (e.g., open water, a ship, or a hit/miss).
     """
     def __init__(self):
-        super().__init__(size=10)
+        super().__init__()
 
     @property
     def embed(self):

@@ -39,10 +39,11 @@ class Ship():
     """
     def __init__(self, size: int):
         self.size = size
-        self.name: str = None
-        self.ship_class: str = None
         self.health = [True] * size
         self.locs: list[tuple[int, int]] = []
+
+        self.name: str = None
+        self.ship_class: str = None
 
         self.current_ship = False
         self.confirmed = False

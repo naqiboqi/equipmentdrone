@@ -49,7 +49,7 @@ import discord
 from asyncio import sleep
 from discord.ext import commands
 from typing import Optional
-from .battleship_game import Player, Game
+from .battleship_game import BattleshipPlayer, Game
 from .utils import PageView
 
 
@@ -82,25 +82,27 @@ class BattleShip(commands.Cog):
             member : discord.Member
                 The other Discord `member` to play against. If `None`, plays agains the bot.
         """
-        player_1 = Player(ctx.message.author)
+        player_1 = BattleshipPlayer(ctx.author)
 
-        bot_player = member is None
-        player_2 = Player(member if member else self.bot.user)
+        is_bot = member is None
+        player_2 = BattleshipPlayer(
+            member=member if member else self.bot.user,
+            is_bot=is_bot)
 
-        if (player_1.member.id in self.player_games or
-            player_2.member.id in self.player_games):
+        if (player_1.id in self.player_games or
+            player_2.id in self.player_games):
             return await ctx.send("One of the players is already in a game!")
 
         if player_1 == player_2:
             return await ctx.send("You can't play against yourself!")
 
-        game = Game(player_1, player_2, bot_player)
-        self.player_games[player_1.member.id] = game
-        self.player_games[player_2.member.id] = game
+        game = Game(self.bot, player_1, player_2)
+        self.player_games[player_1.id] = game
+        self.player_games[player_2.id] = game
         await game.setup(ctx)
 
     @commands.hybrid_command(name='attack')
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.cooldown(1, 3, commands.BucketType.user)
     async def _attack(self, ctx: commands.Context, move: str):
         """Attacks the given position on the board. Valid attacks are `A1`, `b9`, `c10`, `d4`, etc.
 

@@ -21,7 +21,7 @@ of available countries, and updates the game's state accordingly when a selectio
 
 import discord
 
-from .player import Player
+from .battleship_player import BattleshipPlayer
 from .constants import ship_names
 
 
@@ -37,12 +37,12 @@ class CountryView(discord.ui.View):
 
     Attributes:
     -----------
-        player_1 : Player
+        player_1 : BattleshipPlayer
             The first player participating in the game.
-        player_2 : Player
+        player_2 : BattleshipPlayer
             The second player participating in the game.
     """
-    def __init__(self, player_1: Player, player_2: Player, timeout=180):
+    def __init__(self, player_1: BattleshipPlayer, player_2: BattleshipPlayer, timeout=180):
         super().__init__(timeout=timeout)
         self.player_1 = player_1
         self.player_2 = player_2
@@ -51,7 +51,8 @@ class CountryView(discord.ui.View):
         placeholder="Select a country",
         options=[
             discord.SelectOption(label=country, value=str(i))
-            for i, country in enumerate(ship_names.keys())])
+            for i, country in enumerate(ship_names.keys())
+        ])
     async def _select_country(
         self,
         interaction: discord.Interaction,
@@ -65,7 +66,7 @@ class CountryView(discord.ui.View):
             self.player_1.country = country_names[int(select.values[0])]
         else:
             return await interaction.response.defer()
-        
+
         embed = discord.Embed(
             title="Select a country to lead to victory 🌎",
             description=f"""

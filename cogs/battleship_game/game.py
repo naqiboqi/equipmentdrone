@@ -6,7 +6,7 @@ placement, attacking, turn-based play, and game state tracking.
 ### Key Features:
 - **Game Logic**:
     - Manages the core Battleship gameplay, including ship placement, attack validation, 
-      and turn progression.
+        and turn progression.
     - Supports multiplayer games, allowing human players or bots to compete.
     - Tracks game state to ensure smooth play and manage turn order.
 
@@ -17,7 +17,7 @@ placement, attacking, turn-based play, and game state tracking.
 - **Turn-based Play**:
     - Handles turn-based gameplay, allowing players to attack opponents' boards.
     - Tracks each attack and updates the game state accordingly, including hits, misses, 
-      and sunk ships.
+        and sunk ships.
 
 - **Game State Management**:
     - Keeps track of the ongoing game state and updates the board configurations.
@@ -46,9 +46,9 @@ import re
 from asyncio import sleep
 from discord.ext import commands
 from typing import Optional
+from .battleship_player import BattleshipPlayer
 from .constants import bot_messages, ship_names
 from .countryview import CountryView
-from .player import Player
 from ..utils import EventLog
 
 
@@ -69,15 +69,14 @@ class Game:
     
     Attributes:
     ----------
-        player_1 : Player
+        player_1 : BattleshipPlayer
             The first player of the game, who initiated it.
-        player_2 : Player
+        player_2 : BattleshipPlayer
             The second player, can be another Discord user or the bot itself.
-        bot_player : bool
             If player_2 is a bot or not.
-        attacker : Player
+        attacker : BattleshipPlayer
             The player who is currently attacking.
-        defender : Player
+        defender : BattleshipPlayer
             The player who is currently defending.
         log_ : EventLog
             Used to store and send entries of game events.
@@ -91,10 +90,10 @@ class Game:
         log_message : discord.Message
             Used to send the log entries.
     """
-    def __init__(self, player_1: Player, player_2: Player, bot_player: bool=False):
+    def __init__(self, bot: commands.Bot, player_1: BattleshipPlayer, player_2: BattleshipPlayer):
+        self.bot = bot
         self.player_1 = player_1
         self.player_2 = player_2
-        self.bot_player = bot_player
         self.attacker = player_1
         self.defender = player_2
         self.log_ = EventLog()
@@ -112,11 +111,11 @@ class Game:
     @property
     def is_bot_turn(self):
         """If it is currently the bot's turn, if the bot is in the game."""
-        return self.current_player == self.player_2 and self.bot_player
+        return self.attacker == self.player_2 and self.player_2.is_bot
 
     def _add_event_to_log(
         self, 
-        participants: list[Player], 
+        participants: list[BattleshipPlayer], 
         event_type: str, 
         event: Optional[list[tuple[int, int]]]=None):
         """
@@ -124,7 +123,7 @@ class Game:
 
         Params:
         -------
-            participants : list[Player] 
+            participants : list[BattleshipPlayer] 
                 The players involved in the event.
             event_type : str
                 A tag to represent the type of the event.
@@ -151,7 +150,7 @@ class Game:
         view = CountryView(player_1, player_2, timeout=300)
         self.country_message = await ctx.send(embed=embed, view=view)
 
-        if self.bot_player:
+        if player_2.is_bot:
             bot_choices = [
                 country for country in ship_names.keys() if country != player_1.country]
             player_2.country = random.choice(bot_choices)
@@ -171,13 +170,13 @@ class Game:
             delete_after=15)
 
         await sleep(2)
-        if not self.bot_player:
+        if not self.player_2.is_bot:
             await ctx.send(f"{player_2.mention}, please place your ships.")
             await player_2.choose_ship_placement(ctx)
             await player_2.send_board_states()
         else:
             await ctx.send("I am (very intelligently) placing my ships 🧠", delete_after=15)
-            player_2.random_place_ships(bot_player=True)
+            player_2.random_place_ships()
             await sleep(10)
 
         await ctx.send(f"{player_2.mention} has finished placing their ships.",
@@ -195,7 +194,7 @@ class Game:
         await sleep(1)
         self.attack_messasge = await ctx.send("Waiting for your move...")
 
-    def is_move_valid(self, player: Player, move: str=""):
+    def is_move_valid(self, player: BattleshipPlayer, move: str=""):
         """Returns whether or not a player's move is valid.
         
         Letters range from A-J (case-insensitive) and numbers from 1-10.
@@ -209,7 +208,7 @@ class Game:
 
         Params:
         -------
-            player : Player
+            player : BattleshipPlayer
                 The attacking player.
             move : str
                 The input move to be validated.
@@ -234,20 +233,18 @@ class Game:
 
         return None
 
-    def _bot_turn(self):
+    def _do_bot_turn(self):
         """Simultates the bot's turn. 
         
         The bot will choose a random valid spot on the board to attack.
         
         Returns whether or not the attack missed.
         """      
-        bot_player = self.player_2
-
         valid_move = None
         while not valid_move:
             y, x = random.randint(0, 9), random.randint(0, 9)
             move = f"{chr(65 + y)}{x + 1}"
-            valid_move = self.is_move_valid(bot_player, move)
+            valid_move = self.is_move_valid(self.player_2, move)
 
         attack, sunk = self.commence_attack(valid_move[0], valid_move[1])
         return attack, sunk 
@@ -299,7 +296,7 @@ class Game:
         self.attack_messasge = await self.attack_messasge.edit(content="Thinking.... 🤔")
         await sleep(random.randint(1, 5))
 
-        hit, sunk = self._bot_turn()
+        hit, sunk = self._do_bot_turn()
         if hit:
             self.attack_messasge = await self.attack_messasge.edit(
                 content=random.choice(bot_messages.get("attack_messages")))
@@ -325,7 +322,7 @@ class Game:
         """
         await self.player_1.update_board_states()
 
-        if not self.bot_player:
+        if not self.player_2.is_bot:
             await self.player_2.update_board_states()
 
         if self.is_over:
@@ -352,8 +349,7 @@ class Game:
         """
         if attack:
             message = (
-                "My ship was hit! How dare you!" 
-                if self.bot_player and self.defender == self.player_2 
+                "My ship was hit! How dare you!" if self.defender.is_bot 
                 else f"{self.defender.mention}'s ship was hit!")
         else:
             message = f"{self.attacker.mention}, your attack missed!"
@@ -368,7 +364,7 @@ class Game:
 
     async def _handle_turn_message(self):
         """Sends a message indicating whose turn it is."""
-        if self.bot_player and self.attacker == self.player_2:
+        if self.is_bot_turn:
             self.turn_message = await self.turn_message.edit(content="It is now my turn!")
         else:
             self.turn_message = await self.turn_message.edit(

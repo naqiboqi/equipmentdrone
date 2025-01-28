@@ -5,7 +5,7 @@ like buttons and select menus.
 
 ### Dependencies:
 - **`discord`**: Used for creating UI components and handling interactions.
-- **`Board`**: Represents the game board and manages ship placements.
+- **`PlacementBoard`**: Represents the game board and manages ship placements.
 - **`Ship`**: Represents a ship with properties like size, position, and orientation.
 
 Usage:
@@ -18,7 +18,7 @@ Usage:
 
 import discord
 
-from .board import DefenseBoard
+from .battleship_board import PlacementBoard
 from .ship import Ship
 
 
@@ -40,11 +40,11 @@ class BoardView(discord.ui.View):
         fleet : list[Ship] 
             The ships to choose between.
     """
-    def __init__(self, board: DefenseBoard, fleet: list[Ship], *, timeout=600):
+    def __init__(self, board: PlacementBoard, fleet: list[Ship], *, timeout=600):
         super().__init__(timeout=timeout)
         self.placement_board = board
-        self.current: int = None
         self.fleet = fleet
+        self.current_ship_index: int = None
 
         select = discord.ui.Select(
             placeholder="Select a ship",
@@ -84,12 +84,12 @@ class BoardView(discord.ui.View):
         If a ship was selected and the user is now selecting a new ship, confirms
         the placement of the previous ship. 
         """
-        if self.current is not None:        
-            ship = self.fleet[self.current]
+        if self.current_ship_index is not None:        
+            ship = self.fleet[self.current_ship_index]
             self.placement_board.deselect_ship(ship)
 
-        self.current = int(interaction.data["values"][0])
-        ship = self.fleet[self.current]
+        self.current_ship_index = int(interaction.data["values"][0])
+        ship = self.fleet[self.current_ship_index]
         await self._select_ship(interaction, ship)
 
     async def _move_ship(self, interaction: discord.Interaction, dy=0, dx=0):
@@ -106,10 +106,10 @@ class BoardView(discord.ui.View):
             dx : int
                 The change in the x coordinate to move the ship.
         """
-        if self.current is None:
+        if self.current_ship_index is None:
             return await interaction.response.send_message("Select a ship first!", delete_after=5)
 
-        ship = self.fleet[self.current]
+        ship = self.fleet[self.current_ship_index]
         if self.placement_board.is_valid_move_loc(ship, dy=dy, dx=dx):
             self.placement_board.move_ship(ship, dy=dy, dx=dx)
             self.placement_board.redraw(self.fleet)
@@ -163,10 +163,10 @@ class BoardView(discord.ui.View):
             direction : str
                 The direction for the ship to face.
         """
-        if self.current is None:
+        if self.current_ship_index is None:
             return await interaction.response.send_message("Select a ship first!", delete_after=5)
 
-        ship = self.fleet[self.current]
+        ship = self.fleet[self.current_ship_index]
         if self.placement_board.is_valid_rotation(ship, direction):
             self.placement_board.rotate_ship(ship, direction)
             self.placement_board.redraw(self.fleet)
@@ -209,7 +209,7 @@ class BoardView(discord.ui.View):
 
     async def _check_ship_conflicts(self, interaction: discord.Interaction, ship: Ship):
         """Returns whether or not any ship in the fleet shares a location with another ship."""
-        conflicting_ship = self.placement_board.is_valid_confirm_loc(ship, self.fleet)
+        conflicting_ship = self.placement_board.check_for_ship_conflicts(ship, self.fleet)
         if conflicting_ship:
             await interaction.response.send_message(
                 f"The ships {ship.name} and {conflicting_ship.name} intersect at these locations: "
@@ -229,17 +229,17 @@ class BoardView(discord.ui.View):
         
         Selects the next ship in the fleet that is not confirmed.
         """
-        if self.current is None:
+        if self.current_ship_index is None:
             return await interaction.response.send_message("Select a ship first!", delete_after=5)
 
-        ship = self.fleet[self.current]
+        ship = self.fleet[self.current_ship_index]
         if await self._check_ship_conflicts(interaction, ship):
             return
 
         self.placement_board.confirm_ship(ship)
-        self.current = next((i for i, ship in enumerate(self.fleet) if not ship.confirmed), None)
-        if self.current is not None:
-            ship = self.fleet[self.current]
+        self.current_ship_index = next((i for i, ship in enumerate(self.fleet) if not ship.confirmed), None)
+        if self.current_ship_index is not None:
+            ship = self.fleet[self.current_ship_index]
             await self._select_ship(interaction, ship)
         else:
             embed = await self.placement_board.get_ship_placement_embed()

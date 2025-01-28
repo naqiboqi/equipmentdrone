@@ -33,10 +33,10 @@ and misses on their opponent's ships, a fleet of `ships`, and the associated Dis
 - **`asyncio`**: For handling asynchronous tasks, such as waiting for the player to place ships.
 - **`discord.ext.commands`**: For building the command structure and managing the game flow.
 - **`board`**: Contains the `AttackBoard` and `DefenseBoard` classes to manage the player's 
-  boards.
+    boards.
 - **`ship`**: Defines the `Ship` class used to represent individual ships in the player's fleet.
 - **`boardview`**: Provides a `BoardView` class for displaying the game board and interacting 
-  with it through Discord views.
+    with it through Discord views.
 """
 
 
@@ -46,13 +46,14 @@ import random
 
 from asyncio import sleep
 from discord.ext import commands
-from .board import AttackBoard, DefenseBoard
+from .battleship_board import AttackBoard, DefenseBoard, PlacementBoard
 from .ship import Ship
 from .boardview import BoardView
+from ..game_elements import Player
 
 
 
-class Player():
+class BattleshipPlayer(Player):
     """Representation of a player in a Battleship game.
     
     Each player has a board of their own ships showing their fleet,
@@ -60,46 +61,36 @@ class Player():
     
     Attributes:
     -----------
-        defense_board : DefenseBoard 
-            Used to store the player's ships.
-        attack_board : AttackBaord
-            Used to store the player's hits and misses.
-        fleet : list[Ship]
-            The player's ships.
         member : discord.Member
             The Discord Member object associated with the player.
+        fleet : list[Ship]
+            The player's ships.
+        attack_board : AttackBoard
+            Used to store the player's hits and misses.
+        defense_board : DefenseBoard 
+            Used to store the player's ships.
+        placement_board : PlacementBoard
+            Used to set up the player's fleet.
         country : str
             The player's chosen country
-        placement_board_message: discord.Message
-            The Discord messaged used to allow the player to place ships.
-        defense_board_message : discord.Message
-            The Discord message used to send and edit the player's fleet when hit.
         attack_board_message : discord.Message
             The Discord message used to send and edit the player's hits and misses on the enemy.
+        defense_board_message : discord.Message
+            The Discord message used to send and edit the player's fleet when hit.
+        placement_board_message: discord.Message
+            The Discord messaged used to allow the player to place ships.
     """
-    def __init__(self, member: discord.Member):
-        self.defense_board = DefenseBoard()
-        self.attack_board = AttackBoard()
+    def __init__(self, member: discord.Member, is_bot: bool=False):
+        super().__init__(member=member, is_bot=is_bot)
         self.fleet = [Ship(size) for size in [2, 3, 3, 4, 5]]
-        self.member = member
+        self.attack_board = AttackBoard()
+        self.defense_board = DefenseBoard()
+        self.placement_board = PlacementBoard()
 
         self.country: str = None
+        self.attack_board_message: discord.Message = None
         self.placement_message: discord.Message = None
         self.defense_board_message: discord.Message = None
-        self.attack_board_message: discord.Message = None
-
-    def __eq__(self, other: "Player"):
-        return self.member == other.member
-
-    @property
-    def mention(self):
-        """Mention the player."""
-        return self.member.mention
-
-    @property
-    def name(self):
-        """The player's Discord name."""
-        return self.member.name
 
     @property
     def is_defeated(self):
@@ -129,8 +120,8 @@ class Player():
             ctx: commands.Context
                 The current context associated with a command.
         """
-        embed = self.defense_board.get_ship_placement_embed()
-        view = BoardView(self.defense_board, self.fleet)
+        embed = self.placement_board.get_ship_placement_embed()
+        view = BoardView(self.placement_board, self.fleet)
 
         try:
             self.placement_message = await self.member.send(embed=embed, view=view)
@@ -141,31 +132,11 @@ class Player():
         while not (all(ship.confirmed for ship in self.fleet)):
             await sleep(5)
 
+        self.set_defense_board()
         await self.placement_message.delete()
-        await sleep(2)
 
-    def random_place_ships(self, bot_player: bool=False):
-        """Randomly place ships on the player's board.
-        
-        Params:
-        -------
-        bot_player : bool
-            If the placing player is a bot or not."""
-        self.defense_board.random_place_ships(self.fleet, bot_player)
-
-    async def send_board_states(self):
-        """Sends the player's boards as a direct message."""
-        fleet_embed = self.defense_board.embed
-        tracking_embed = self.attack_board.embed
-        self.defense_board_message = await self.member.send(embed=fleet_embed)
-        self.attack_board_message = await self.member.send(embed=tracking_embed)
-
-    async def update_board_states(self):
-        """Updates the boards in the player's direct messages."""
-        fleet_embed = self.defense_board.embed
-        tracking_embed = self.attack_board.embed
-        self.defense_board_message = await self.defense_board_message.edit(embed=fleet_embed)
-        self.attack_board_message = await self.attack_board_message.edit(embed=tracking_embed)
+    def set_defense_board(self):
+        self.defense_board.from_placement_board(self.placement_board)
 
     def get_ship_at(self, y: int, x: int):
         """Returns the player's ship that is at the given `(y, x)` location.
@@ -183,3 +154,21 @@ class Player():
                 return ship
 
         return None
+
+    def random_place_ships(self):
+        """Randomly place ships on the player's board."""
+        self.placement_board.random_place_ships(self.fleet, self.is_bot)
+
+    async def send_board_states(self):
+        """Sends the player's boards as a direct message."""
+        defense_embed = self.defense_board.embed
+        attack_embed = self.attack_board.embed
+        self.defense_board_message = await self.member.send(embed=defense_embed)
+        self.attack_board_message = await self.member.send(embed=attack_embed)
+
+    async def update_board_states(self):
+        """Updates the boards in the player's direct messages."""
+        defense_embed = self.defense_board.embed
+        attack_embed = self.attack_board.embed
+        self.defense_board_message = await self.defense_board_message.edit(embed=defense_embed)
+        self.attack_board_message = await self.attack_board_message.edit(embed=attack_embed)
