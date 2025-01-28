@@ -104,7 +104,7 @@ class Player():
     @property
     def is_defeated(self):
         """If the player has no remaining ships."""
-        return all(ship.is_sunk() for ship in self.fleet)
+        return all(ship.is_sunk for ship in self.fleet)
 
     def set_ship_names(self, names: dict[str, list[str]]):
         """Sets the names of the ships in the player's fleet.

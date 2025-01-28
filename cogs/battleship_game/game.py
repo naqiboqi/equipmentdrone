@@ -104,6 +104,16 @@ class Game:
         self.turn_message: discord.Message = None
         self.log_message: discord.Message = None
 
+    @property
+    def is_over(self):
+        """If the game is over (eg. if either player has no ships)."""
+        return self.player_1.is_defeated or self.player_2.is_defeated
+
+    @property
+    def is_bot_turn(self):
+        """If it is currently the bot's turn, if the bot is in the game."""
+        return self.current_player == self.player_2 and self.bot_player
+
     def _add_event_to_log(
         self, 
         participants: list[Player], 
@@ -136,8 +146,7 @@ class Game:
 
         embed = discord.Embed(
             title="Select a country to lead into battle 🌎",
-            color=discord.Color.blue()
-        )
+            color=discord.Color.blue())
 
         view = CountryView(player_1, player_2, timeout=300)
         self.country_message = await ctx.send(embed=embed, view=view)
@@ -147,7 +156,6 @@ class Game:
                 country for country in ship_names.keys() if country != player_1.country]
             player_2.country = random.choice(bot_choices)
 
-        # Wait until both players have chosen a country
         while not player_1.country or not player_2.country:
             await sleep(5)
 
@@ -159,12 +167,12 @@ class Game:
         await ctx.send("Check your DMs to place your ships.")
         await player_1.choose_ship_placement(ctx)
         await player_1.send_board_states()
-        await ctx.send(f"{player_1.member.mention} has finished placing their ships.",
+        await ctx.send(f"{player_1.mention} has finished placing their ships.",
             delete_after=15)
 
         await sleep(2)
         if not self.bot_player:
-            await ctx.send(f"{player_2.member.mention}, please place your ships.")
+            await ctx.send(f"{player_2.mention}, please place your ships.")
             await player_2.choose_ship_placement(ctx)
             await player_2.send_board_states()
         else:
@@ -172,17 +180,17 @@ class Game:
             player_2.random_place_ships(bot_player=True)
             await sleep(10)
 
-        await ctx.send(f"{player_2.member.mention} has finished placing their ships.",
+        await ctx.send(f"{player_2.mention} has finished placing their ships.",
             delete_after=15)
 
         await ctx.send(
-            f"Game started between {self.player_1.member.mention} and "
-            f"{self.player_2.member.mention}!")
+            f"Game started between {self.player_1.mention} and "
+            f"{self.player_2.mention}!")
 
         await sleep(1)
         self._add_event_to_log([self.player_1, self.player_2], "start_game")
         self.turn_message = await ctx.send(
-            f"{self.player_1.member.mention}, you are going first!")
+            f"{self.player_1.mention}, you are going first!")
 
         await sleep(1)
         self.attack_messasge = await ctx.send("Waiting for your move...")
@@ -214,7 +222,7 @@ class Game:
         pattern = r'^[a-jA-J](1[0-9]|[1-9])$'
         if re.match(pattern, move):
             y, x = char_to_nums[move[0].upper()], int(move[1:]) - 1
-            target = player.attack_board.grid[y][x]
+            target = player.attack_board[y][x]
 
             if not target in [HIT, MISS]:
                 return y, x
@@ -226,7 +234,7 @@ class Game:
 
         return None
 
-    async def _bot_turn(self):
+    def _bot_turn(self):
         """Simultates the bot's turn. 
         
         The bot will choose a random valid spot on the board to attack.
@@ -258,7 +266,7 @@ class Game:
         """
         attacker = self.attacker
         defender = self.defender
-        target = defender.defense_board.grid[y][x]
+        target = defender.defense_board[y][x]
 
         hit = False
         sunk = False
@@ -268,18 +276,18 @@ class Game:
             ship.take_damage_at(y, x)
             self._add_event_to_log([attacker, defender], "attack_hit", [(y, x)])
 
-            if ship.is_sunk():
+            if ship.is_sunk:
                 self._add_event_to_log([attacker, defender], "sank", ship.locs)
                 sunk = True
 
-            attacker.attack_board.grid[y][x] = HIT
-            defender.defense_board.grid[y][x] = HIT
+            attacker.attack_board[y][x] = HIT
+            defender.defense_board[y][x] = HIT
         else:
             self._add_event_to_log([attacker, defender], "attack_miss", [(y, x)])
-            attacker.attack_board.grid[y][x] = MISS
+            attacker.attack_board[y][x] = MISS
 
         return hit, sunk
-    
+
     async def _handle_bot_turn(self, ctx: commands.Context):
         """Commences the bot's turn and send messages showing its actions.
         
@@ -291,7 +299,7 @@ class Game:
         self.attack_messasge = await self.attack_messasge.edit(content="Thinking.... 🤔")
         await sleep(random.randint(1, 5))
 
-        hit, sunk = await self._bot_turn()
+        hit, sunk = self._bot_turn()
         if hit:
             self.attack_messasge = await self.attack_messasge.edit(
                 content=random.choice(bot_messages.get("attack_messages")))
@@ -320,11 +328,16 @@ class Game:
         if not self.bot_player:
             await self.player_2.update_board_states()
 
-        if self._end_turn():
+        if self.is_over:
+            self._add_event_to_log([self.attacker, self.defender], "finished_game")
             return await self.end_game_(ctx)
 
+        self.attacker = self.player_1 if self.attacker == self.player_2 else self.player_2
+        self.defender = self.player_2 if self.attacker == self.player_1 else self.player_1
+        self._add_event_to_log([self.attacker, self.defender], "next_turn")
+
         await self._handle_turn_message()
-        if self.bot_player and self.attacker == self.player_2:
+        if self.is_bot_turn:
             await self._handle_bot_turn(ctx)
 
     async def handle_attack_message(self, attack: bool, sunk: bool):
@@ -341,12 +354,12 @@ class Game:
             message = (
                 "My ship was hit! How dare you!" 
                 if self.bot_player and self.defender == self.player_2 
-                else f"{self.defender.member.mention}'s ship was hit!")
+                else f"{self.defender.mention}'s ship was hit!")
         else:
-            message = f"{self.attacker.member.mention}, your attack missed!"
+            message = f"{self.attacker.mention}, your attack missed!"
 
         self.attack_messasge = await self.attack_messasge.edit(content=message)
-        
+
         await sleep(2)
         if sunk:
             await self.attack_messasge.reply("The ship was sunk!", delete_after=10)
@@ -359,21 +372,6 @@ class Game:
             self.turn_message = await self.turn_message.edit(content="It is now my turn!")
         else:
             self.turn_message = await self.turn_message.edit(
-                content=f"{self.attacker.member.mention}, it is now your turn!")
+                content=f"{self.attacker.mention}, it is now your turn!")
 
         await sleep(3)
-
-    def _end_turn(self):
-        """Checks if the game is over and ends it, or continues to the next turn otherwise."""
-        if self._is_over():
-            self._add_event_to_log([self.attacker, self.defender], "finished_game")
-            return True
-
-        self.attacker = self.player_1 if self.attacker == self.player_2 else self.player_2
-        self.defender = self.player_2 if self.attacker == self.player_1 else self.player_1
-        self._add_event_to_log([self.attacker, self.defender], "next_turn")
-        return False
-
-    def _is_over(self):
-        """Returns whether or not the game is over (eg. if either player has no ships)."""
-        return self.player_1.is_defeated() or self.player_2.is_defeated()

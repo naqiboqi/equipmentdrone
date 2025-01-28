@@ -43,7 +43,7 @@ class Ship():
         self.ship_class: str = None
         self.health = [True] * size
         self.locs: list[tuple[int, int]] = []
-        
+
         self.current_ship = False
         self.confirmed = False
         self.placed_before = False
