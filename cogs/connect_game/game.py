@@ -32,7 +32,8 @@ class Game:
 
     @property
     def current_player_won(self):
-        self.won(self.current_player.symbol)
+        """If the current player won."""
+        return self.won(self.current_player.symbol)
 
     @property
     def game_state(self):
@@ -248,6 +249,12 @@ class Game:
         return random.choice(open_cols) if open_cols else -1
 
     def won(self, symbol: str):
+        """Returns whether or not the current player has a winning sequence.
+        
+        Params:
+            symbol : str
+                The player's symbol.
+        """
         board_size = self.board.size
 
         for row in range(board_size):
