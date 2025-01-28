@@ -97,7 +97,7 @@ class ConnectFour(commands.Cog):
         if not winner:
             message = "The game has ended in a draw."
         else:
-            message = f"{winner.member.name} has won the game! 🎉"
+            message = f"{winner.name} has won the game! 🎉"
 
         await game.board_message.reply(message)
         await self.cleanup(game)
