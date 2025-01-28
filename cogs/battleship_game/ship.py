@@ -48,6 +48,20 @@ class Ship():
         self.confirmed = False
         self.placed_before = False
 
+    def __str__(self):
+        """Returns a string representation of the ship.
+        
+        For example:
+            `The SS Varmland, a Destroyer. Currently at 2 health.`"""
+        return f"""
+            The **{self.name}**, a {self.ship_class} (size: {self.size})
+            Currently at {self.health.count(True)} health."""
+
+    @property
+    def is_sunk(self):
+        """If the ship has no health remaining."""
+        return all(hp is False for hp in self.health)
+
     def take_damage_at(self, y: int, x: int):
         """Damages the targeted section of the ship.
         
@@ -63,16 +77,3 @@ class Ship():
         """
         section = self.locs.index((y, x))
         self.health[section] = False
-
-    def is_sunk(self):
-        """Returns whether the ship has lost all of its health."""
-        return all(hp is False for hp in self.health)
-
-    def __str__(self):
-        """Returns a string representation of the ship.
-        
-        For example:
-            `The SS Varmland, a Destroyer. Currently at 2 health.`"""
-        return f"""
-            The **{self.name}**, a {self.ship_class} (size: {self.size})
-            Currently at {self.health.count(True)} health."""
