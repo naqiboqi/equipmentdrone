@@ -57,7 +57,6 @@ from .video import Video
 playlist_emoji = emojis.get("playlist")
 
 
-
 class VideoNode:
     """Represents a video in a playlist.
     
@@ -85,43 +84,51 @@ class VideoNode:
 class VideoPlaylist:
     """Represents a video playlist by the form of a doubly-linked list."""
     def __init__(self):
-        self.now_playing: VideoNode = None
         self.head: VideoNode = None
         self.tail: VideoNode = None
+        self.now_playing: VideoNode = None
         self.size = 0
-        
+
         self.forward = True
         self.loop_one = False
         self.loop_all = False
         self.ready = asyncio.Event()
-        
+
+    def __iter__(self):
+        """Allows iterating over the playlist."""
+        current = self.head
+        while current:
+            yield current
+            current = current.next
+
+    def __str__(self):
+        """Returns a string representation of the playlist."""
+        total_runtime = sum(node.content['duration'] for node in self)
+        formatted_runtime = strftime('%H:%M:%S', gmtime(total_runtime))
+        return f"**Upcoming Videos**: | Total runtime: {formatted_runtime}"
+
     def cleanup(self):
         """Clears the playlsit and resets its settings."""
         self.head = None
         self.tail = None
         self.now_playing = None
         self.size = 0
-        
+
         self.forward = True
         self.loop_one = False
         self.loop_all = False
         self.ready.clear()
-        
+
     def set_loop_one(self):
         """Tells the player to replay the currently playing video, if it exists."""
         self.loop_all = False
         self.loop_one = not self.loop_one
-        
-        # if self.now_playing:
-        #     self.ready.set()
-            
         return self.loop_one
-    
+
     def set_loop_all(self):
         """Tells the player to replay the entire playlist."""
         self.loop_one = False
         self.loop_all = not self.loop_all
-
         return self.loop_all
 
     async def _add_first_node(self, new_video: VideoNode):
@@ -135,7 +142,7 @@ class VideoPlaylist:
         self.head = new_video
         self.tail = new_video
         self.now_playing = new_video
-        
+
         self.ready.set()
 
     async def add_to_end(self, video: Video):
@@ -154,18 +161,18 @@ class VideoPlaylist:
             new_node.prev = self.tail
             self.tail.next = new_node
             self.tail = new_node
-        
+
         if self.now_playing is None:
             self.now_playing = self.tail
             self.ready.set()
-        
+
         self.size += 1
-        
+
     def advance(self):
         """Advances to next video to play depending on the playlist's current direction (`self.forward`)."""
         if not self.now_playing:
             return
-        
+
         if self.forward:
             self.move_forward()
         else:
@@ -180,26 +187,20 @@ class VideoPlaylist:
         from the beginning if `loop_all = True` and the playlist is over.
         """
         if self.loop_one:
-            print(f"replaying current {self.now_playing}")
             self.ready.set()
             return
-        
-        print(f"moving from {self.now_playing} to {self.now_playing.next}")
-        self.now_playing = self.now_playing.next
 
+        self.now_playing = self.now_playing.next
         if not self.now_playing:
             if self.loop_all:
                 self.now_playing = self.head
-                print(f"replaying from the beginning {self.now_playing}")
                 self.ready.set()
                 return
             else:
-                print("reached the end")
                 return
-        
-        print("playing next")
+
         self.ready.set()
-        
+
     def move_backward(self):
         """Moves to the previous video in the playlist and sets it as the current.
         
@@ -207,28 +208,22 @@ class VideoPlaylist:
         Otherwise loops the current video if `loop_one = True`.
         """
         if self.loop_one:
-            print(f"replaying current {self.now_playing}")
             self.ready.set()
             return
-        
-        print(f"moving backwards from {self.now_playing} to {self.now_playing.prev}")
+
         self.now_playing = self.now_playing.prev
-        
         if not self.now_playing:
             if self.loop_all:
                 self.now_playing = self.tail
-                print(f"moving to the last video of the playlist {self.now_playing}")
                 self.ready.set()
                 return
             else:
                 self.now_playing = self.head
-                print(f"replaying first {self.now_playing}")
                 self.ready.set()
                 return
-        
-        print("playing prev")
+
         self.ready.set()
-        
+
     async def replace_current(self, video: Video):
         """Replaces the current video's source with a new source.
         
@@ -241,7 +236,6 @@ class VideoPlaylist:
                 The video with the unplayed stream.
         """
         self.now_playing.content = video
-        print("replaced")
 
     def shuffle(self):
         """Shuffles the playlist."""
@@ -262,7 +256,7 @@ class VideoPlaylist:
 
             swap_nodes(current, target)
             current = current.next
-            
+
     def remove(self, spot: int):
         """Removes a video at the given spot in the playlist.
         
@@ -275,7 +269,7 @@ class VideoPlaylist:
         """
         if not self.head:
             raise IndexError("The playlist is empty.")
-        
+
         if not 1 <= spot <= self.size:
             raise IndexError("That spot does not exist in the playlist.")
         elif spot == 1:
@@ -285,7 +279,7 @@ class VideoPlaylist:
                 self.head.prev = None
             else:
                 self.tail = None
-                
+
         elif spot == self.size:
             removed = self.tail
             self.tail = self.tail.prev
@@ -297,19 +291,19 @@ class VideoPlaylist:
             current = self.head
             for i in range(spot - 1):
                 current = current.next
-            
+
             removed = current
             prev = current.prev
             new_next = current.next
             prev.next = new_next
             new_next.prev = prev
-            
+
         self.size -= 1
         if self.size == 0:
             self.ready.clear()
-        
+
         return removed.content
-        
+
     def get_upcoming(self):
         """Returns a numbered list of upcoming videos with their descriptions."""
         descriptions: list[str] = []
@@ -317,16 +311,3 @@ class VideoPlaylist:
             descriptions.append(f"{spot}. {node}")
 
         return descriptions
-        
-    def __iter__(self):
-        """"""
-        current = self.head
-        while current:
-            yield current
-            current = current.next
-
-    def __str__(self):
-        """Returns a string representation of the playlist."""
-        total_runtime = sum(node.content['duration'] for node in self)
-        formatted_runtime = strftime('%H:%M:%S', gmtime(total_runtime))
-        return f"**Upcoming Videos**: | Total runtime: {formatted_runtime}"

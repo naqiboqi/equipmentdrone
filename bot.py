@@ -1,11 +1,10 @@
-import asyncio
 import aiohttp
 import discord
 import os
 
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-from misc import status
+from cogs.utils import status
 
 
 
@@ -13,7 +12,6 @@ class MyBot(commands.Bot):
     """Representation of a Disord bot."""
     def __init__(self):
         super().__init__(command_prefix="!", intents=discord.Intents.all())
-
         self.inital_extensions = [
             "battleship",
             "connectfour",
@@ -23,35 +21,42 @@ class MyBot(commands.Bot):
             "videocontroller",
         ]
 
+    @tasks.loop(hours=2)
+    async def update_status_task(self):
+        try:
+            game_status = await status.choose_game()
+            await self.change_presence(activity = discord.Game(name=game_status))
+            print(f"I'm now playing {game_status}!")
+        except TypeError as e:
+            print(f"Error updating status: {e}")
+
     async def setup_hook(self):
-        self.background_task.start()
         self.session = aiohttp.ClientSession()
+        self.update_status_task.start()
 
         print("Loading extensions...\n")
         for filename in self.inital_extensions:
-            await self.load_extension(f"cogs.{filename}")
+            try:
+                await self.load_extension(f"cogs.{filename}")
+            except commands.errors.ExtensionNotFound as e:
+                print(f"Error loading {filename}: {e}")
+
+    async def on_ready(self):
+        print(F"\n{self.user.name} is now online!")
+
+    @update_status_task.before_loop
+    async def before_update_status(self):
+        await self.wait_until_ready()
 
     async def close(self):
         await super().close()
         await self.session.close()
 
-    @tasks.loop(minutes=10)
-    async def background_task(self):
-        print("Running background task")
-
-    async def on_ready(self):
-        print(F"\n{self.user.name} is now online!")
-
-        while True:
-            game_status = await status.choose_game()
-            await self.change_presence(activity = discord.Game(name=game_status))
-            await asyncio.sleep(7200)   
-
 
 def main():
     load_dotenv()
     TOKEN = os.getenv("DISCORD_TOKEN")
-    
+
     bot = MyBot()
     bot.run(TOKEN)
 
