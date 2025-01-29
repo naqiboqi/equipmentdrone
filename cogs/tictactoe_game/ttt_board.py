@@ -1,8 +1,10 @@
 import discord
 
+from ..game_elements import Board
 
 
-class Board:
+
+class TTTBoard(Board):
     """Representation of the player's board in a Tic-tac-toe game.
     
     Attributes:
@@ -12,24 +14,8 @@ class Board:
         grid : list[list[str]]
             A 2D grid representing the board that shows the placed symbols.
     """
-    def __init__(self, size: int=3, default: str="⏹️"):
-        self.default = default
-        self.size = size
-        self.grid = [[default for _ in range(self.size)] for _ in range(self.size)]
-
-    def __getitem__(self, index: int):
-        return self.grid[index]
-
-    def __setitem__(self, index: int, val: str):
-        self.grid[index] = val
-
-    def __str__(self):
-        """Returns a string representation of the board."""
-        board = ""
-        for row in self.grid:
-            board += f"{''.join(row)}\n"
-
-        return board
+    def __init__(self, size: int=3):
+        super().__init__(size=size)
 
     @property
     def embed(self):
@@ -40,11 +26,6 @@ class Board:
             color=discord.Color.red())
 
         return embed
-
-    @property
-    def is_full(self):
-        """If the board is full."""
-        return not any(self.default in row for row in self.grid)
 
     def mark(self, y: int, x: int, symbol: str):
         """Marks the given location with the player's symbol.

@@ -46,7 +46,7 @@ import discord
 
 from discord.ext import commands
 from typing import Optional
-from .tictactoe_game import Game, GameView, Player
+from .tictactoe_game import Game, GameView, TTTPlayer
 
 
 
@@ -78,26 +78,26 @@ class TicTacToe(commands.Cog):
             member : discord.Member
                 The other Discord `member` to play against. If `None`, plays agains the bot.
         """
-        player_1 = Player(ctx.message.author, "⭕")
+        player_1 = TTTPlayer(member=ctx.message.author, symbol="⭕")
 
-        bot_player = member is None
-        player_2 = Player(member if member else self.bot.user, "❌")
+        is_bot = member is None
+        player_2 = TTTPlayer(member=member if not is_bot else self.bot.user, symbol="❌")
 
-        if (player_1.member.id in self.player_games or
-            player_2.member.id in self.player_games):
+        if (player_1.id in self.player_games or
+            player_2.id in self.player_games):
             return await ctx.send("One of the players is already in a game!")
 
-        game = Game(self.bot, player_1, player_2, bot_player)
+        game = Game(self.bot, player_1, player_2)
         game.current_player = player_1
         view = GameView(game)
         game.view = view
 
-        self.player_games[player_1.member.id] = game
-        self.player_games[player_2.member.id] = game
+        self.player_games[player_1.id] = game
+        self.player_games[player_2.id] = game
 
-        embed = game.get_embed()
+        embed = game.embed
         game.board_message = await ctx.send(embed=embed, view=view)
-        game.turn_message = await ctx.send(f"{player_1.member.mention}, you are going first!")
+        game.turn_message = await ctx.send(f"{player_1.mention}, you are going first!")
 
     async def end_game(self, game: Game):
         """Sends the final state of the game cleans it up."""

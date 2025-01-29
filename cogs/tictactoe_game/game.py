@@ -3,12 +3,8 @@ import discord
 from asyncio import sleep
 from discord.ext import commands
 from random import choice
-from .board import Board
-from .player import Player
-
-
-
-OPEN = "⏹️"
+from .ttt_board import TTTBoard
+from .ttt_player import TTTPlayer
 
 
 
@@ -21,17 +17,15 @@ class Game:
     ----------
         bot : commands.Bot
             The bot instance.
-        player_1 : Player
+        player_1 : TTTPlayer
             The first player of the game, who initiated it.
         player_2 : Player
             The second player, can be another Discord user or the bot itself.
-        bot_player : bool
-            If player_2 is a bot or not.
-        current_player : Player
-            The player who is currently placing.
         
-        board : discord.Message
+        board : TTTBoard
             The Tic-tac-toe board.
+        current_player : TTTPlayer
+            The player who is currently placing.
         view : GameView
             The view used to display the game buttons.
         board_message : discord.Message
@@ -39,18 +33,22 @@ class Game:
         turn_message : discord.Message
             Used to send and edit the current turn status.
     """
-    def __init__(self, bot: commands.Bot, player_1: Player, player_2: Player, bot_player: bool):
+    def __init__(self, bot: commands.Bot, player_1: TTTPlayer, player_2: TTTPlayer):
         self.bot = bot
         self.player_1 = player_1
         self.player_2 = player_2
-        self.bot_player = bot_player
-        self.current_player: Player = None
-        self.winner: Player = None
-
-        self.board = Board()
+        self.board = TTTBoard()
+        
+        self.current_player: TTTPlayer = None
+        self.winner: TTTPlayer = None
         self.view = None
         self.board_message: discord.Message = None
         self.turn_message: discord.Message = None
+
+    @property
+    def embed(self):
+        """An embed that shows the current state of the board."""
+        return self.board.embed
 
     @property
     def game_state(self):
@@ -97,7 +95,7 @@ class Game:
         return (
             0 <= y < self.board.size and
             0 <= x < self.board.size and
-            self.board[y][x] == OPEN)
+            self.board[y][x] == self.board.default)
 
     def mark(self, y: int, x: int, symbol: str):
         """Checks if a location on the board is a valid location, and marks it.
