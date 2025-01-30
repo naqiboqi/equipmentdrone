@@ -63,7 +63,7 @@ class VideoPlayerView(discord.ui.View):
         super().__init__(timeout=timeout)
         self.bot = bot
         self.ctx = ctx
-        
+
     @discord.ui.button(emoji=stop_emoji, style=discord.ButtonStyle.blurple)
     async def _stop(
         self,
@@ -93,7 +93,7 @@ class VideoPlayerView(discord.ui.View):
 
         button.emoji = resume_emoji if self.ctx.voice_client.is_paused() else pause_emoji
         await interaction.message.edit(view=self)
-    
+
     @discord.ui.button(emoji=next_emoji, style=discord.ButtonStyle.blurple)
     async def _skip(
         self,

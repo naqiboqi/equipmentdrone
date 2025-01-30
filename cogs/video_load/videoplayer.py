@@ -52,6 +52,7 @@ import time
 
 from discord.ext import commands
 from .constants import emojis
+from .eq import Eq
 from .video import Video
 from .videoplaylist import VideoPlaylist
 from .videoplayerview import VideoPlayerView
@@ -103,16 +104,21 @@ class VideoPlayer:
         self.video_playlist = VideoPlaylist()
 
         self.current: Video = None
-        self.now_playing_message: discord.Message = None
-        self.playlist_message: discord.Message = None
+        self.eq = Eq(ctx)
         self.paused = False
         self.volume = .30
 
+        self.now_playing_message: discord.Message = None
+        self.playlist_message: discord.Message = None
+
         ctx.bot.loop.create_task(self.player_loop())
-        
+
+    def set_equalizer(self, name: str):
+        on_off = self.eq.set_preset(name=name)
+        return on_off
+
     async def player_loop(self):
-        """
-        Main loop responsible for managing the playback of video content in the playlist.
+        """Main loop responsible for managing the playback of video content in the playlist.
 
         This function continuously waits for the playlist to have content ready, 
         retrieves the current video source, prepares the next source for seamless playback
@@ -126,12 +132,7 @@ class VideoPlayer:
         - Updates the player details dynamically during playback with a progress bar and current volume.
         - Cleans up resources after the video finishes playing.
 
-        Post-playback:
-        --------------
-        - Cleans up the source object after playback ends.
-        - Advances the playlist to the next video.
-
-        The method runs until the bot's voice connection with Discord is closed.
+        Runs continuously while the bot is connected to a voice channel.
         """
         await self.bot.wait_until_ready()
 
@@ -140,16 +141,17 @@ class VideoPlayer:
 
             self.video_playlist.ready.clear()
             source = self.video_playlist.now_playing.content
-            
+
             if not isinstance(source, Video):
                 print(f"Error: The next video is not valid: {source}")
                 continue
-            
+
             new_source = await Video.get_source(
                 ctx=self.ctx, search=source.web_url, 
                 loop=self.bot.loop, 
                 download=False,
-                seek_time=source.seek_time)
+                seek_time=source.seek_time,
+                eq=self.eq.preset_setting)
             await self.video_playlist.replace_current(new_source)
 
             self.current = source
@@ -161,16 +163,16 @@ class VideoPlayer:
 
             await self.show_player_details()
             await self.timer(self.current.start_time)
-            
+
     async def after_play(self, error=None):
         if error:
             print(error)
-            
+
         if self.video_playlist.forward:
             await self.show_player_details(elapsed_time=self.current.duration)
-            
+
         self.video_playlist.advance()
-        
+
         if self.current:
             self.current.cleanup()
             self.current = None
@@ -190,14 +192,13 @@ class VideoPlayer:
         try:
             while True:
                 await asyncio.sleep(1.00)
-                
+
                 if self.guild.voice_client.is_playing():
                     elapsed_time = time.perf_counter() - (start_time + paused_time)
                     await self.show_player_details(elapsed_time)
                 elif self.paused:
                     paused_time += 1.00
                 else:
-                    # Case for when the video is finished playing
                     elapsed_time = time.perf_counter() - (start_time + paused_time)
                     await self.show_player_details(elapsed_time)
                     break
@@ -228,7 +229,7 @@ class VideoPlayer:
             loop = "one"
         else:
             loop = None
-        
+
         now_playing_embed = self.current.get_embed(elapsed_time=elapsed_time, loop=loop)
         if self.now_playing_message:
             self.now_playing_message = await self.now_playing_message.edit(embed=now_playing_embed)
@@ -252,7 +253,11 @@ class VideoPlayer:
         """
         playlist = pytube.Playlist(playlist_url)
         sources = await Video.get_sources(
-            ctx=ctx, playlist=playlist, loop=self.bot.loop, download=False)
+            ctx=ctx, 
+            playlist=playlist,
+            loop=self.bot.loop, 
+            download=False,
+            eq=self.eq.preset_setting)
 
         for source in sources:
             await self.video_playlist.add_to_end(source)
@@ -265,11 +270,12 @@ class VideoPlayer:
         self, 
         ctx: commands.Context,
         video_search: str, 
-        seek_time: int):
+        seek_time: float):
         """
         Adds a single video to the end of the playlist.
         
         Params:
+        -------
             ctx : commands.Context
                 The current context associated with a command.
             video_search : str
@@ -281,11 +287,12 @@ class VideoPlayer:
             ctx=ctx, search=video_search, 
             loop=self.bot.loop, 
             download=False, 
-            seek_time=seek_time)
+            seek_time=seek_time,
+            eq=self.eq.preset_setting)
 
         await self.video_playlist.add_to_end(source)
         await ctx.send(f"Added {source.title} to the playlist {playlist_emoji}", delete_after=10)
-            
+
     async def cleanup(self):
         try:
             await self.now_playing_message.delete()

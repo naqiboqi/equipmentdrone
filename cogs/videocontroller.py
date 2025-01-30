@@ -158,9 +158,6 @@ class VideoController(commands.Cog):
 
         player = self.get_player(ctx)
         self.player_ctx = ctx
-
-        # Need to defer, as Discord will invalidate the interaction if it takes more
-        # than 3 seconds to respond to the command.
         await ctx.defer()
 
         is_playlist = "playlist?list=" in video_search
@@ -168,10 +165,9 @@ class VideoController(commands.Cog):
 
         try:
             if is_playlist:
-                await player.add_videos_to_playlist(ctx, video_search)
+                await player.add_videos_to_playlist(ctx, video_search, seek_time)
             else:
                 await player.add_video_to_playlist(ctx, video_search, seek_time)
-        # A likely result if the playlist is privated.
         except Exception as e:
             await ctx.send(f"An error occurred: {e}", delete_after=10)
 
@@ -189,7 +185,7 @@ class VideoController(commands.Cog):
             return await ctx.send(
                 "I am not currently playing anything!",
                 delete_after=10)
-            
+
         player = self.get_player(ctx)
         if player.now_playing_message:
             await player.now_playing_message.delete()
@@ -214,9 +210,9 @@ class VideoController(commands.Cog):
             title=f"{player.video_playlist}", 
             items=player.video_playlist.get_upcoming(),
             max_items_per_page=30)
-        
+
         player.playlist_message = await ctx.send(embed=view.pages[0], view=view)
-    
+
     @commands.hybrid_command(name='pause')
     async def _pause(self, ctx: commands.Context):
         """Pauses or unpauses the current video.
@@ -238,7 +234,7 @@ class VideoController(commands.Cog):
         else:
             vc.pause()
             player.paused = True
-            
+
         await ctx.send("Paused the video" if player.paused else "Unpaused the video.", delete_after=10)
 
     @commands.hybrid_command(name='skip')
@@ -257,7 +253,7 @@ class VideoController(commands.Cog):
 
         vc.stop()
         await ctx.send("Skipped the video.", delete_after=10)
-        
+
     @commands.hybrid_command(name="prev", aliases=["previous", "back"])
     async def _prev(self, ctx: commands.Context):
         """Skips to the next video.
@@ -274,6 +270,7 @@ class VideoController(commands.Cog):
 
         player = self.get_player(ctx)
         player.video_playlist.forward = False
+
         vc.stop()
         await ctx.send("Going to previous video.", delete_after=10)
 
@@ -308,7 +305,7 @@ class VideoController(commands.Cog):
         if not vc or not vc.is_connected():
             return await ctx.send(
                 "I am not currently connected to voice!", delete_after=10)
-        elif (not 1 <= vol <= 100) or (vol is None):
+        elif not 1 <= vol <= 100:
             return await ctx.send(
                 "Please enter a value between 1 and 100.", delete_after=10)
         elif vc.source:
@@ -317,41 +314,50 @@ class VideoController(commands.Cog):
         player = self.get_player(ctx)
         player.volume = vol / 100
         await ctx.send(f"{emojis.get('sound_on')}  Set the volume to `{vol}`%.", delete_after=10)
-        
+
+    @commands.hybrid_command(name="bassboost")
+    async def _bassboost(self, ctx: commands.Context):
+        vc = ctx.voice_client
+        if not vc or not vc.is_connected():
+            return await ctx.send(
+                "I am not currently connected to voice!", delete_after=10)
+
+        player = self.get_player(ctx)
+        try:
+            boosted = player.set_equalizer("bass_boost")
+        except ValueError as e:
+            return await ctx.send(f"Invalid preset: {e}")
+
+        await ctx.send("Now bassboosting!" if boosted else "Boosting is off")
+
     @commands.hybrid_command(name="loopall")
     async def _loop_all(self, ctx: commands.Context):
-        """Loops the entire playlist.
-        
-        Disables looping the current video, (`loop_one`), unless the playlist has only one video.
-        """
+        """Loops the entire playlist."""
         vc = ctx.voice_client
         if not vc or not vc.is_connected():
             return await ctx.send(
                 "I am not currently connected to voice!", delete_after=10)
-            
+
         player = self.get_player(ctx)
         loop = player.video_playlist.set_loop_all()
-        
+
         message = "Now looping all" if loop else "Stopped looping"
         await ctx.send(message)
-    
+
     @commands.hybrid_command(name="loopone")
     async def _loop_one(self, ctx: commands.Context):
-        """Loops the currently playing video.
-        
-        Disables looping the entire playlist, (`loop_all`), unless the playlist has only one video.
-        """
+        """Loops the currently playing video."""
         vc = ctx.voice_client
         if not vc or not vc.is_connected():
             return await ctx.send(
                 "I am not currently connected to voice!", delete_after=10)
-            
+
         player = self.get_player(ctx)
         loop = player.video_playlist.set_loop_one()
-        
+
         message = "Now looping the current video" if loop else "Stopped looping"
         await ctx.send(message)
-        
+
     @commands.hybrid_command(name='removevideo', aliases=['rremove'])
     async def _remove(self, ctx: commands.Context, *, spot: int):
         """Removes a video at the given spot in the playlist.
@@ -386,7 +392,7 @@ class VideoController(commands.Cog):
         player = self.get_player(ctx)
         player.video_playlist.shuffle()
         await ctx.send("Shuffled the playlist.", delete_after=10)
-        
+
     @commands.hybrid_command(name='lyrics', aliases=['lyric'])
     async def _lyrics(
         self, 
@@ -426,7 +432,7 @@ class VideoController(commands.Cog):
                 if len(lyrics) > 2000:
                     for chunk in [lyrics[i : i + 2000] for i in range(0, len(lyrics), 2000)]:
                         await ctx.send(chunk)
-                        
+
                     return
 
                 lyrics_embed = discord.Embed(
