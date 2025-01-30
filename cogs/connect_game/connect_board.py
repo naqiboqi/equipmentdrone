@@ -5,6 +5,14 @@ from ..game_elements import Board
 
 
 class ConnectFourBoard(Board):
+    """Representation of a board in a Connect Four game.
+    
+    Attributes:
+        size : int
+            The size of the board.
+        grid : list[list[str]]
+            A grid that represents the spaces of the board.
+    """
     def __init__(self, size: int=8):
         super().__init__(size=size)
 

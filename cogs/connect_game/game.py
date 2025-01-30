@@ -2,8 +2,8 @@ import discord
 
 from asyncio import sleep
 from discord.ext import commands
-from .connectfourboard import ConnectFourBoard
-from .connectfourplayer import ConnectFourPlayer
+from .connect_board import ConnectFourBoard
+from .connect_player import ConnectFourPlayer
 from .botlogic import BotLogic
 from .gameutils import is_winner
 

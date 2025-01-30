@@ -1,7 +1,7 @@
 """Includes the `is_winner(board, symbol)` function to check if any win conditions are met."""
 
 
-from .connectfourboard import ConnectFourBoard
+from .connect_board import ConnectFourBoard
 
 
 
