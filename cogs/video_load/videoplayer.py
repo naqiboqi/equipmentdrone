@@ -52,7 +52,7 @@ import time
 
 from discord.ext import commands
 from .constants import emojis
-from .eq import Eq
+from .equalizer import Equalizer
 from .video import Video
 from .videoplaylist import VideoPlaylist
 from .videoplayerview import VideoPlayerView
@@ -82,18 +82,20 @@ class VideoPlayer:
             The current context associated with a command.
         guild : discord.Guild
             The current guild associated with a command.
-        playlist : asyncio.playlist
+        equalizer : Equalizer
+            The equalizer to set ffmpeg filters.
+        video_playlist : VideoPlaylist
             The playlist storing upcoming videos.
         current : Video
             The currently playing video.
-        now_playing_embed : discord.Message
-            The embed storing the player's current information.
-        playlist_embed : discord.Message
-            The embed storing the upcoming videos' information.
         paused : bool
             Whether the player is paused.
         volume : float
             The current volume of the player as a percentage.
+        now_playing_message : discord.Message
+            The embed storing the player's current information.
+        playlist_message : discord.Message
+            The embed storing the upcoming videos' information.
     """
     def __init__(self, ctx: commands.Context):
         self.bot = ctx.bot
@@ -101,21 +103,17 @@ class VideoPlayer:
         self.cog = ctx.cog
         self.ctx = ctx
         self.guild = ctx.guild
+        self.equalizer = Equalizer(ctx)
         self.video_playlist = VideoPlaylist()
 
         self.current: Video = None
-        self.eq = Eq(ctx)
         self.paused = False
         self.volume = .30
 
         self.now_playing_message: discord.Message = None
         self.playlist_message: discord.Message = None
 
-        ctx.bot.loop.create_task(self.player_loop())
-
-    def set_equalizer(self, name: str):
-        on_off = self.eq.set_preset(name=name)
-        return on_off
+        self.bot.loop.create_task(self.player_loop())
 
     async def player_loop(self):
         """Main loop responsible for managing the playback of video content in the playlist.
@@ -141,20 +139,19 @@ class VideoPlayer:
 
             self.video_playlist.ready.clear()
             source = self.video_playlist.now_playing.content
+            self.current = source
 
             if not isinstance(source, Video):
                 print(f"Error: The next video is not valid: {source}")
                 continue
 
-            new_source = await Video.get_source(
-                ctx=self.ctx, search=source.web_url, 
-                loop=self.bot.loop, 
-                download=False,
-                seek_time=source.seek_time,
-                eq=self.eq.preset_setting)
-            await self.video_playlist.replace_current(new_source)
+            # new_source = await Video.get_source(
+            #     ctx=self.ctx,
+            #     search=source.web_url, 
+            #     loop=self.bot.loop, 
+            #     options=self.equalizer.build_options())
+            # await self.video_playlist.replace_current(new_source)
 
-            self.current = source
             start_time = time.perf_counter() - source.seek_time
             source.start(start_time, self.volume)
             self.guild.voice_client.play(
@@ -203,10 +200,8 @@ class VideoPlayer:
                     await self.show_player_details(elapsed_time)
                     break
 
-        except AttributeError as e:
-            print(e)
-        except discord.errors.NotFound as e:
-            print(e)
+        except (AttributeError, discord.errors.NotFound):
+            pass
 
     async def show_player_details(self, elapsed_time: float=0.00):
         """Creates and sends an embed showing the current details of the player:
@@ -242,7 +237,7 @@ class VideoPlayer:
         ctx: commands.Context, 
         playlist_url: str):
         """
-        Adds all videos in the playlist at the given url to the playlist.
+        Adds multiple videos to the playlist.
         
         Params:
         -------
@@ -251,13 +246,13 @@ class VideoPlayer:
             playlist_url : str
                 The url for the `Playlist` to pull sources from.
         """
+        options = self.equalizer.build_ffmpeg_options()
         playlist = pytube.Playlist(playlist_url)
         sources = await Video.get_sources(
             ctx=ctx, 
             playlist=playlist,
-            loop=self.bot.loop, 
-            download=False,
-            eq=self.eq.preset_setting)
+            loop=self.bot.loop,
+            options=options)
 
         for source in sources:
             await self.video_playlist.add_to_end(source)
@@ -272,7 +267,7 @@ class VideoPlayer:
         video_search: str, 
         seek_time: float):
         """
-        Adds a single video to the end of the playlist.
+        Adds a video to the end of the playlist.
         
         Params:
         -------
@@ -283,12 +278,12 @@ class VideoPlayer:
             seek_time : float
                 The time to start the video at.
         """
+        options = self.equalizer.build_ffmpeg_options(seek_time=seek_time)
         source = await Video.get_source(
-            ctx=ctx, search=video_search, 
-            loop=self.bot.loop, 
-            download=False, 
-            seek_time=seek_time,
-            eq=self.eq.preset_setting)
+            ctx=ctx,
+            search=video_search, 
+            loop=self.bot.loop,
+            options=options)
 
         await self.video_playlist.add_to_end(source)
         await ctx.send(f"Added {source.title} to the playlist {playlist_emoji}", delete_after=10)

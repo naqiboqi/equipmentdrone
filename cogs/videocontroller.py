@@ -52,7 +52,7 @@ import discord
 
 from discord.ext import commands
 from typing import Optional
-from .video_load import emojis, VideoPlayer
+from .video_load import emojis, EqView, VideoPlayer
 from .video_load import LYRICS_URL
 from .utils import PageView
 
@@ -135,6 +135,19 @@ class VideoController(commands.Cog):
 
         await ctx.send("You must be in a voice channel!", delete_after=10)
 
+    @commands.hybrid_command(name='eq')
+    async def _show_eq(self, ctx: commands.Context):
+        """Displays the equalizer menu."""
+        vc = ctx.voice_client
+        if not vc or not vc.is_connected:
+            return await ctx.send(
+                "I am not currently playing anything!",
+                delete_after=10)
+
+        player = self.get_player(ctx)
+        view = EqView(self.bot, player.equalizer)
+        await ctx.send(view=view)
+
     @commands.hybrid_command(name='play')
     async def _play(self, ctx: commands.Context, *, video_search: str):
         """Searches for a video and adds it to the playlist.
@@ -165,7 +178,7 @@ class VideoController(commands.Cog):
 
         try:
             if is_playlist:
-                await player.add_videos_to_playlist(ctx, video_search, seek_time)
+                await player.add_videos_to_playlist(ctx, video_search)
             else:
                 await player.add_video_to_playlist(ctx, video_search, seek_time)
         except Exception as e:

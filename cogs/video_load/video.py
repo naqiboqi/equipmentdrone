@@ -49,6 +49,7 @@ import asyncio
 import discord
 import time
 
+from discord.ext import commands
 from functools import partial
 from pytube import Playlist
 from yt_dlp import YoutubeDL
@@ -90,31 +91,6 @@ ytdl = YoutubeDL(YTDL_FORMATS)
 
 
 
-def get_ffmpeg_options(seek_time: float=0.00, eq: str=None):
-    """Returns the applicable ffmpeg options for the requested video.
-
-    Params:
-    -------
-    seek_time : float
-        Time to seek to in the video, in seconds.
-    eq : str
-        The equalizer settings.
-    """
-    options = {
-        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-        'options': '-vn -acodec pcm_s16le -ar 48000 -ac 2'
-    }
-
-    if seek_time:
-        options['before_options'] += f" -ss {seek_time}"
-
-    if eq:
-        options['options'] += f" -af equalizer={eq}"
-
-    print(options)
-    return options
-
-
 class Video(discord.PCMVolumeTransformer):
     """Represents a Youtube video, with applicable attributes to store the video data.
 
@@ -122,22 +98,22 @@ class Video(discord.PCMVolumeTransformer):
     -----------
     source : discord.FFmpegPCMAudio
         The audio source obtained through ffmpeg.
-    data : dict[str, str | int]
-        The metadata for the audio source.
+    duration : int
+        The length of the video in seconds.
     title : str
-        The title of the source video.
+        The title of the video.
     web_url : str
-        The web URL that the source video originated from.
+        The web URL that the video originated from.
     video_id : str
-        The video-id of the source video.
+        The video-id of the video.
     thumbnail : str
-        The thumbnail URL of the source video.
+        The thumbnail URL of the video.
     elapsed_time : float
-        The elapsed time of the video, in seconds.
-    seeked_time : float
-        The start/seek time of the video in seconds, defaults to 0.00.
+        The elapsed time of the video in seconds.
     start_time : float
         The start time of the video.
+    seeked_time : float
+        The seeked time of the video in seconds.
     progress : ProgressBar
         Represents a video's progress bar with a slider denoting the elapsed time.
     """
@@ -157,8 +133,8 @@ class Video(discord.PCMVolumeTransformer):
         self.requester = requester
 
         self.elapsed_time = 0.00
-        self.seek_time = 0.00
         self.start_time = 0.00
+        self.seek_time = 0.00
         self.progress: ProgressBar = None
 
     def __getitem__(self, item_name: str):
@@ -174,27 +150,27 @@ class Video(discord.PCMVolumeTransformer):
     @classmethod
     async def get_sources(
         cls,
-        ctx: discord.ext.commands.Context,
+        ctx: commands.Context,
         playlist: Playlist,
         *,
         loop: asyncio.AbstractEventLoop,
-        download: bool=False,
-        eq: str=None):
+        options: dict[str, str]):
         """Gets the source object for each video in the playlist through its URL.
 
         Params:
         -------
-        ctx : discord.ext.commands.Context
+        ctx : commands.Context
             The current context associated with a command.
         playlist : Playlist
-            Contains the videos to obtain the sources from.
+            The videos to obtain the sources from.
         loop : asyncio.AbstractEventLoop
             The event loop to use for asynchronous operations. If not provided, 
             the default event loop for the current thread will be used.
-        download : bool
-            Whether to download the video or not.
+        options : dict[str, str]
+            The ffmpeg options to apply.
         """
-        tasks = [cls.get_source(ctx=ctx, search=url, loop=loop, download=download)
+        tasks = [
+            cls.get_source(ctx=ctx, search=url, loop=loop, options=options)
             for url in playlist.video_urls]
 
         return await asyncio.gather(*tasks)
@@ -202,29 +178,28 @@ class Video(discord.PCMVolumeTransformer):
     @classmethod
     async def get_source(
         cls,
-        ctx: discord.ext.commands.Context,
+        ctx: commands.Context,
         search: str,
         *,
         loop: asyncio.AbstractEventLoop,
         download: bool=False,
-        seek_time: float=0.00,
-        eq: str=None):
+        options: dict[str, str]):
         """Gets the source for the video obtained from searching for the `string`,
         returning the first result from YouTube.
 
         Params:
         -------
-        ctx : discord.ext.commands.Context
+        ctx : commands.Context
             The current context associated with a command.
         search : str
             The string to search for.
         loop : asyncio.AbstractEventLoop
             The event loop to use for asynchronous operations. If not provided, 
-            the default event loop for the current thread will be used.
+                the default event loop for the current thread will be used.
         download : bool
             Whether to download the video or not.
-        seek_time : float
-            The seek time of the video in seconds.
+        options : dict[str, str]
+            The ffmpeg options to apply.
         """
         loop = loop or asyncio.get_event_loop()
         to_run = partial(ytdl.extract_info, url=search, download=download)
@@ -238,8 +213,6 @@ class Video(discord.PCMVolumeTransformer):
         else:
             filename = data['url']
 
-        #print(eq=="f=1:width_type=h:width=200:g=0")
-        options = get_ffmpeg_options(seek_time=seek_time, eq=eq)
         return cls(
             discord.FFmpegPCMAudio(filename, **options),
             data=data,
