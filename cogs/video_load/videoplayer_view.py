@@ -70,6 +70,9 @@ class VideoPlayerView(discord.ui.View):
         interaction: discord.Interaction,
         button: discord.ui.Button):
         """Stops the player by invoking the `stop` command."""
+        if not interaction.user.voice:
+            return await interaction.response.defer()
+
         await interaction.response.defer()
         await self.ctx.invoke(self.bot.get_command("stop"))
 
@@ -79,6 +82,9 @@ class VideoPlayerView(discord.ui.View):
         interaction: discord.Interaction,
         button: discord.ui.Button):
         """Plays the previous video by invoking the `previous` command."""
+        if not interaction.user.voice:
+            return await interaction.response.defer()
+
         await interaction.response.defer()
         await self.ctx.invoke(self.bot.get_command("previous"))
 
@@ -88,6 +94,9 @@ class VideoPlayerView(discord.ui.View):
         interaction: discord.Interaction,
         button: discord.ui.Button):
         """Pauses or unpauses the current video by invoking the `pause` command."""
+        if not interaction.user.voice:
+            return await interaction.response.defer()
+
         await interaction.response.defer()
         await self.ctx.invoke(self.bot.get_command("pause"))
 
@@ -100,6 +109,9 @@ class VideoPlayerView(discord.ui.View):
         interaction: discord.Interaction,
         button: discord.ui.Button):
         """Skips to the next video by invoking the `skip` command."""
+        if not interaction.user.voice:
+            return await interaction.response.defer()
+
         await interaction.response.defer()
         await self.ctx.invoke(self.bot.get_command("skip"))
 
@@ -109,5 +121,8 @@ class VideoPlayerView(discord.ui.View):
         interaction: discord.Interaction,
         button: discord.ui.Button):
         """Loops the currently playing video by invoking the `loop_one` command."""
+        if not interaction.user.voice:
+            return await interaction.response.defer()
+
         await interaction.response.defer()
         await self.ctx.invoke(self.bot.get_command("loopone"))
