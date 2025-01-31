@@ -7,7 +7,7 @@ queue management, and embed creation.
 
 from .constants import emojis
 from .equalizer import Equalizer
-from .eqview import EqView
+from .equalizer_view import EqView
 from .progress import ProgressBar
 from .video import Video
 from .videoplayer import VideoPlayer

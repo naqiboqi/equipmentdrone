@@ -93,9 +93,11 @@ class VideoPlayer:
         volume : float
             The current volume of the player as a percentage.
         now_playing_message : discord.Message
-            The embed storing the player's current information.
+            The message showing the player's current information.
+        equalizer_message : discord.Message
+            The message storing the equalizer information.
         playlist_message : discord.Message
-            The embed storing the upcoming videos' information.
+            The message showing the upcoming videos' information.
     """
     def __init__(self, ctx: commands.Context):
         self.bot = ctx.bot
@@ -111,6 +113,7 @@ class VideoPlayer:
         self.volume = .30
 
         self.now_playing_message: discord.Message = None
+        self.equalizer_message: discord.Message = None
         self.playlist_message: discord.Message = None
 
         self.bot.loop.create_task(self.player_loop())
@@ -289,11 +292,11 @@ class VideoPlayer:
         await ctx.send(f"Added {source.title} to the playlist {playlist_emoji}", delete_after=10)
 
     async def cleanup(self):
-        try:
-            await self.now_playing_message.delete()
-            await self.playlist_message.delete()
-        except AttributeError as e:
-            print(e)
+        for message in [self.now_playing_message, self.equalizer_message, self.playlist_message]:
+            try:
+                await message.delete()
+            except discord.errors.NotFound:
+                pass
 
     def destroy(self, guild: discord.Guild):
         """Disconnects and cleans the player.

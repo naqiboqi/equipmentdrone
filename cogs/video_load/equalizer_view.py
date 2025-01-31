@@ -28,5 +28,6 @@ class EqView(discord.ui.View):
 
         filter_name = interaction.data["values"][0]
         self.equalizer.set_filter(filter_name=filter_name)
+        embed = self.equalizer.embed
 
-        await interaction.response.edit_message(view=self)
+        await interaction.response.edit_message(embed=embed, view=self)

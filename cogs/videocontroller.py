@@ -145,8 +145,14 @@ class VideoController(commands.Cog):
                 delete_after=10)
 
         player = self.get_player(ctx)
+        try:
+            await player.equalizer_message.delete()
+        except discord.errors.NotFound:
+            pass
+
         view = EqView(self.bot, player.equalizer)
-        await ctx.send(view=view)
+        embed = view.equalizer.embed
+        player.equalizer_message = await ctx.send(embed=embed, view=view)
 
     @commands.hybrid_command(name='play')
     async def _play(self, ctx: commands.Context, *, video_search: str):
@@ -200,10 +206,13 @@ class VideoController(commands.Cog):
                 delete_after=10)
 
         player = self.get_player(ctx)
-        if player.now_playing_message:
+        try:
             await player.now_playing_message.delete()
-            now_playing_embed = player.current.get_embed()
-            player.now_playing_message = await ctx.send(embed=now_playing_embed)
+        except discord.errors.NotFound:
+            pass
+
+        now_playing_embed = player.current.get_embed()
+        player.now_playing_message = await ctx.send(embed=now_playing_embed)
 
     @commands.hybrid_command(name='playlist')
     async def _show_upcoming(self, ctx: commands.Context):
