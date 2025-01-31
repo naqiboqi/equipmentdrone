@@ -13,7 +13,7 @@ class ConnectFourBoard(Board):
         grid : list[list[str]]
             A grid that represents the spaces of the board.
     """
-    def __init__(self, size: int=8):
+    def __init__(self, size: int=7):
         super().__init__(size=size)
 
     @property
