@@ -147,8 +147,8 @@ class VideoController(commands.Cog):
         player = self.get_player(ctx)
         try:
             await player.equalizer_message.delete()
-        except discord.errors.NotFound:
-            pass
+        except Exception as e:
+            print(e)
 
         view = EqView(self.bot, player.equalizer)
         embed = view.equalizer.embed
@@ -208,8 +208,8 @@ class VideoController(commands.Cog):
         player = self.get_player(ctx)
         try:
             await player.now_playing_message.delete()
-        except discord.errors.NotFound:
-            pass
+        except Exception as e:
+            print(e)
 
         now_playing_embed = player.current.get_embed()
         player.now_playing_message = await ctx.send(embed=now_playing_embed)

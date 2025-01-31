@@ -55,7 +55,7 @@ from .constants import emojis
 from .equalizer import Equalizer
 from .video import Video
 from .videoplaylist import VideoPlaylist
-from .videoplayerview import VideoPlayerView
+from .videoplayer_view import VideoPlayerView
 
 
 
@@ -148,12 +148,12 @@ class VideoPlayer:
                 print(f"Error: The next video is not valid: {source}")
                 continue
 
-            # new_source = await Video.get_source(
-            #     ctx=self.ctx,
-            #     search=source.web_url, 
-            #     loop=self.bot.loop, 
-            #     options=self.equalizer.build_options())
-            # await self.video_playlist.replace_current(new_source)
+            new_source = await Video.get_source(
+                ctx=self.ctx,
+                search=source.web_url, 
+                loop=self.bot.loop, 
+                options=self.equalizer.build_ffmpeg_options())
+            await self.video_playlist.replace_current(new_source)
 
             start_time = time.perf_counter() - source.seek_time
             source.start(start_time, self.volume)

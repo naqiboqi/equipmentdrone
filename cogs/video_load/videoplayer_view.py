@@ -123,6 +123,6 @@ class VideoPlayerView(discord.ui.View):
         """Loops the currently playing video by invoking the `loop_one` command."""
         if not interaction.user.voice:
             return await interaction.response.defer()
-
+        
         await interaction.response.defer()
         await self.ctx.invoke(self.bot.get_command("loopone"))

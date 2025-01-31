@@ -95,7 +95,6 @@ class Equalizer:
             "muffled": Filter("Muffled", "f=1000:width_type=h:width=1000:g=-15"),
             "lofi": Filter("Lo-Fi", "f=300:width_type=h:width=500:g=-10"),
             "airy": Filter("Airy", "f=12000:width_type=h:width=500:g=10"),
-            
         }
 
         self.current_filter = self.filters.get("flat")
@@ -157,5 +156,4 @@ class Equalizer:
         if self.current_filter:
             ffmpeg_options["options"] += f" -af {self.current_filter.apply}"
 
-        print(ffmpeg_options)
         return ffmpeg_options
