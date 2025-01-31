@@ -4,5 +4,5 @@ The `utils` package. Includes interactive embeds containing log events and loadi
 
 
 from .eventlog import EventLog
-from .jsonloader import JsonLoader
-from .pageview import PageView
+from .json_loader import JsonLoader
+from .page_view import PageView
