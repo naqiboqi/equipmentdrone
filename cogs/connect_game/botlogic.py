@@ -2,7 +2,7 @@
 import random
 
 from .connect_board import ConnectFourBoard
-from .gameutils import is_winner
+from .game_utils import is_winner
 
 
 

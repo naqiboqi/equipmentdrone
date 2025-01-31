@@ -5,7 +5,7 @@ from discord.ext import commands
 from .connect_board import ConnectFourBoard
 from .connect_player import ConnectFourPlayer
 from .botlogic import BotLogic
-from .gameutils import is_winner
+from .game_utils import is_winner
 
 
 

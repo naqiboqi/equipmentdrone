@@ -48,7 +48,7 @@ from discord.ext import commands
 from typing import Optional
 from .battleship_player import BattleshipPlayer
 from .constants import bot_messages, ship_names
-from .countryview import CountryView
+from .country_view import CountryView
 from ..utils import EventLog
 
 

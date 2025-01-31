@@ -48,7 +48,7 @@ from asyncio import sleep
 from discord.ext import commands
 from .battleship_board import AttackBoard, DefenseBoard, PlacementBoard
 from .ship import Ship
-from .boardview import BoardView
+from .board_view import BoardView
 from ..game_elements import Player
 
 
