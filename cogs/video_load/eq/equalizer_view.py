@@ -6,7 +6,7 @@ from .equalizer import Equalizer
 
 
 class EqualizerView(discord.ui.View):
-    def __init__(self, bot: commands.Context, equalizer: Equalizer, timeout=None):
+    def __init__(self, bot: commands.Bot, equalizer: Equalizer, timeout=None):
         super().__init__(timeout=timeout)
         self.bot = bot
         self.equalizer = equalizer
@@ -23,7 +23,7 @@ class EqualizerView(discord.ui.View):
 
     async def _select_option(self, interaction: discord.Interaction):
         """Callback function for the dropdown."""
-        if not self.equalizer.in_voice:
+        if not self.equalizer.is_connected:
             return await interaction.response.defer()
 
         filter_name = interaction.data["values"][0]
@@ -31,3 +31,4 @@ class EqualizerView(discord.ui.View):
         embed = self.equalizer.embed
 
         await interaction.response.edit_message(embed=embed, view=self)
+        await self.bot.get_cog("VideoController").apply_eq(ctx=self.equalizer.ctx)

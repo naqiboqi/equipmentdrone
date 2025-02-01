@@ -172,7 +172,6 @@ class VideoPlayer:
             await self.show_player_details(elapsed_time=self.current.duration)
 
         self.video_playlist.advance()
-
         if self.current:
             self.current.cleanup()
             self.current = None
@@ -192,7 +191,6 @@ class VideoPlayer:
         try:
             while True:
                 await asyncio.sleep(1.00)
-
                 if self.guild.voice_client.is_playing():
                     elapsed_time = time.perf_counter() - (start_time + paused_time)
                     await self.show_player_details(elapsed_time)
@@ -290,6 +288,16 @@ class VideoPlayer:
 
         await self.video_playlist.add_to_end(source)
         await ctx.send(f"Added {source.title} to the playlist {playlist_emoji}", delete_after=10)
+
+    async def apply_eq(self, ctx: commands.Context):
+        """Applies the current equalizer settings to all videos in the playlist."""
+        options = self.equalizer.build_ffmpeg_options()
+        for node in self.video_playlist:
+            node.content = await Video.get_source(
+                ctx=ctx,
+                search=node.content.web_url,
+                loop=self.bot.loop,
+                options=options)
 
     async def cleanup(self):
         for message in [self.now_playing_message, self.equalizer_message, self.playlist_message]:

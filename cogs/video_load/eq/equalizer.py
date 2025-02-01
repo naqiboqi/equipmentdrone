@@ -11,6 +11,7 @@ level = emojis.get("elapsed_line")
 
 
 class Filter:
+    """"""
     def __init__(self, name: str, settings: str):
         self.name = name
         self.settings = settings
@@ -20,7 +21,7 @@ class Filter:
 
     @property
     def apply(self):
-        """The applicable equalizer string to pass to ffmpeeg."""
+        """The applicable equalizer string to pass to ffmpeg."""
         return f"equalizer={self.settings}"
 
     @property
@@ -120,7 +121,7 @@ class Equalizer:
         return self.current_filter.name
 
     @property
-    def in_voice(self):
+    def is_connected(self):
         """If connected to a voice channel."""
         return self.ctx.voice_client
 

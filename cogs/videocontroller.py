@@ -135,6 +135,14 @@ class VideoController(commands.Cog):
 
         await ctx.send("You must be in a voice channel!", delete_after=10)
 
+    async def apply_eq(self, ctx: commands.Context):
+        vc = ctx.voice_client
+        if not vc or not vc.is_connected:
+            return
+
+        player = self.get_player(ctx)
+        await player.apply_eq(ctx=ctx)
+
     @commands.hybrid_command(name='eq')
     async def _show_eq(self, ctx: commands.Context):
         """Displays the equalizer menu."""
