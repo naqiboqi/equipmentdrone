@@ -52,7 +52,7 @@ import time
 
 from discord.ext import commands
 from .constants import emojis
-from .equalizer import Equalizer
+from .eq.equalizer import Equalizer
 from .video import Video
 from .videoplaylist import VideoPlaylist
 from .videoplayer_view import VideoPlayerView

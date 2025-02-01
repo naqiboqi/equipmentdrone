@@ -1,7 +1,7 @@
 import discord
 
 from discord.ext import commands
-from .constants import emojis
+from ..constants import emojis
 
 
 
@@ -73,6 +73,7 @@ class Equalizer:
     """Representation of an equalizer for controlling ffmpeg settings.
     
     Attributes:
+    -----------
         ctx : commands.Context
             The current context.
         filters : dict[str, str].

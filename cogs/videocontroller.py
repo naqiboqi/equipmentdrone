@@ -52,7 +52,7 @@ import discord
 
 from discord.ext import commands
 from typing import Optional
-from .video_load import emojis, EqView, VideoPlayer
+from .video_load import emojis, EqualizerView, VideoPlayer
 from .video_load import LYRICS_URL
 from .utils import PageView
 
@@ -150,7 +150,7 @@ class VideoController(commands.Cog):
         except Exception as e:
             print(e)
 
-        view = EqView(self.bot, player.equalizer)
+        view = EqualizerView(self.bot, player.equalizer)
         embed = view.equalizer.embed
         player.equalizer_message = await ctx.send(embed=embed, view=view)
 

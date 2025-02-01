@@ -42,7 +42,7 @@ class MyBot(commands.Bot):
                 print(f"Error loading {filename}: {e}")
 
     async def on_ready(self):
-        print(F"\n{self.user.name} is now online!")
+        print(f"\n{self.user.name} is now online!")
 
     @update_status_task.before_loop
     async def before_update_status(self):

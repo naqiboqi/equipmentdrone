@@ -5,7 +5,7 @@ from .equalizer import Equalizer
 
 
 
-class EqView(discord.ui.View):
+class EqualizerView(discord.ui.View):
     def __init__(self, bot: commands.Context, equalizer: Equalizer, timeout=None):
         super().__init__(timeout=timeout)
         self.bot = bot
