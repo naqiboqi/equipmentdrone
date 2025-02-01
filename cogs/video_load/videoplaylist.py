@@ -1,6 +1,5 @@
 """
-This module provides an implementation of a video playlist system for use with media 
-playback applications, including Discord bots. It supports dynamic playlist management 
+This module provides an implementation of a video playlist system. It supports dynamic playlist management 
 through a doubly-linked list structure, offering efficient navigation, modification, 
 and playback controls.
 
@@ -18,10 +17,6 @@ Key Features:
 - **Asynchronous Support**:
     - Use `asyncio` for efficient, non-blocking playlist operations.
     - Trigger playback readiness using asynchronous events.
-
-- **Node-Based Design**:
-    - The `VideoNode` class represents individual videos in the playlist.
-    - Includes metadata like video title, URL, and duration.
 
 ### Classes:
 - **`VideoNode`**:
@@ -82,7 +77,26 @@ class VideoNode:
 
 
 class VideoPlaylist:
-    """Represents a video playlist by the form of a doubly-linked list."""
+    """Represents a video playlist by the form of a doubly-linked list.
+    
+    Attributes:
+    -----------
+        head : VideoNode
+            The head node.
+        tail : VideoNode
+            The tail node.
+        now_playing : VideoNode
+            The currently playing node.
+        size : int
+            Size of the playlist.
+        forward: bool
+            If the playlist is progressing forward.
+        loop_one : bool
+            If the current video is looping.
+        loop_all : bool
+            If the playlist is looping.
+        ready : asyncio.Event
+            The """
     def __init__(self):
         self.head: VideoNode = None
         self.tail: VideoNode = None
@@ -105,7 +119,7 @@ class VideoPlaylist:
         """Returns a string representation of the playlist."""
         total_runtime = sum(node.content['duration'] for node in self)
         formatted_runtime = strftime('%H:%M:%S', gmtime(total_runtime))
-        return f"**Upcoming Videos**: | Total runtime: {formatted_runtime}"
+        return f"**Upcoming Videos** | Total Duration: `{formatted_runtime}`"
 
     def cleanup(self):
         """Clears the playlsit and resets its settings."""
@@ -123,12 +137,19 @@ class VideoPlaylist:
         """Tells the player to replay the currently playing video, if it exists."""
         self.loop_all = False
         self.loop_one = not self.loop_one
+
         return self.loop_one
 
     def set_loop_all(self):
         """Tells the player to replay the entire playlist."""
         self.loop_one = False
         self.loop_all = not self.loop_all
+
+        if not self.now_playing:
+            if self.head:
+                self.now_playing = self.head
+                self.ready.set()
+
         return self.loop_all
 
     async def _add_first_node(self, new_video: VideoNode):
@@ -162,7 +183,7 @@ class VideoPlaylist:
             self.tail.next = new_node
             self.tail = new_node
 
-        if self.now_playing is None:
+        if not self.now_playing:
             self.now_playing = self.tail
             self.ready.set()
 
@@ -189,6 +210,9 @@ class VideoPlaylist:
         if self.loop_one:
             self.ready.set()
             return
+
+        if self.now_playing == self.tail:
+            self.ready.clear()
 
         self.now_playing = self.now_playing.next
         if not self.now_playing:
