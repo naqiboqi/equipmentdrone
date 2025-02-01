@@ -37,6 +37,9 @@ class ConnectFour(commands.Cog):
         """
         player_1 = ConnectFourPlayer(member=ctx.author, symbol="🟪")
 
+        if member and member.bot and member != self.bot.user:
+            return await ctx.send("Can't play against that bot, they are not smart enough!")
+
         is_bot = member is None
         player_2 = ConnectFourPlayer(
             member=member if not is_bot else self.bot.user, 

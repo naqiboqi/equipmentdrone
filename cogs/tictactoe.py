@@ -60,7 +60,7 @@ class TicTacToe(commands.Cog):
         player_games : dict[int, GameView]
             Stores the games associated with each player.
     """
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.player_games: dict[int, GameView] = {}
 
@@ -80,8 +80,14 @@ class TicTacToe(commands.Cog):
         """
         player_1 = TTTPlayer(member=ctx.message.author, symbol="⭕")
 
+        if member and member.bot and member != self.bot.user:
+            return await ctx.send("Can't play against that bot, they are not smart enough!")
+
         is_bot = member is None
-        player_2 = TTTPlayer(member=member if not is_bot else self.bot.user, symbol="❌")
+        player_2 = TTTPlayer(
+            member=member if not is_bot else self.bot.user, 
+            symbol="❌", 
+            is_bot=is_bot)
 
         if (player_1.id in self.player_games or
             player_2.id in self.player_games):

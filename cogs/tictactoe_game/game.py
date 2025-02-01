@@ -38,7 +38,7 @@ class Game:
         self.player_1 = player_1
         self.player_2 = player_2
         self.board = TTTBoard()
-        
+
         self.current_player: TTTPlayer = None
         self.winner: TTTPlayer = None
         self.view = None
@@ -78,9 +78,9 @@ class Game:
         return "ongoing"
 
     @property
-    def is_bot_turn(self):
+    def bot_turn(self):
         """If it is the bot's turn."""
-        return self.bot_player and self.current_player == self.player_2.member
+        return self.current_player == self.player_2.member and self.player_2.is_bot
 
     def _is_valid_loc(self, y: int, x: int):
         """Returns whether or not the location is valid.
@@ -139,7 +139,7 @@ class Game:
         await self.view.mark_button_tile(y, x, self.current_player.symbol)
         self.board_message = await self.board_message.edit(embed=embed, view=self.view)
 
-        state = self._check_game_state()
+        state = self.game_state
         if state == "win":
             self.winner = self.current_player
             return await self.bot.get_cog("TicTacToe").end_game(game=self)
@@ -150,7 +150,7 @@ class Game:
             self.player_2 if self.current_player == self.player_1.member else self.player_1)
 
         await self._handle_turn_message()
-        if self.is_bot_turn:
+        if self.bot_turn:
             await self._do_bot_turn()
 
     async def _do_bot_turn(self):
@@ -166,7 +166,7 @@ class Game:
 
     async def _handle_turn_message(self):
         """Sends a message indicating whose turn it is."""
-        if self._is_bot_turn():
+        if self.bot_turn:
             self.turn_message = await self.turn_message.edit(content="It's now my turn!")
             await sleep(3)
         else:
