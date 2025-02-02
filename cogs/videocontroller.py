@@ -121,7 +121,7 @@ class VideoController(commands.Cog):
         return player
 
     @commands.hybrid_command(name='join', aliases=['connect'])
-    async def _connect(self, ctx: commands.Context):
+    async def _connect(self, ctx: commands.Context, from_play: bool=False):
         """Connects the bot to your current voice channel.
         
         Params:
@@ -131,36 +131,11 @@ class VideoController(commands.Cog):
         """
         if ctx.author.voice:
             channel = ctx.message.author.voice.channel
-            return await channel.connect()
+            await channel.connect()
+            if not from_play:
+                return await ctx.send(f"Connected to voice channel `{channel.name}`", delete_after=10)
 
         await ctx.send("You must be in a voice channel!", delete_after=10)
-
-    async def apply_eq(self, ctx: commands.Context):
-        vc = ctx.voice_client
-        if not vc or not vc.is_connected:
-            return
-
-        player = self.get_player(ctx)
-        await player.apply_eq(ctx=ctx)
-
-    @commands.hybrid_command(name='eq')
-    async def _show_eq(self, ctx: commands.Context):
-        """Displays the equalizer menu."""
-        vc = ctx.voice_client
-        if not vc or not vc.is_connected:
-            return await ctx.send(
-                "I am not currently playing anything!",
-                delete_after=10)
-
-        player = self.get_player(ctx)
-        try:
-            await player.equalizer_message.delete()
-        except Exception as e:
-            print(e)
-
-        view = EqualizerView(self.bot, player.equalizer)
-        embed = view.equalizer.embed
-        player.equalizer_message = await ctx.send(embed=embed, view=view)
 
     @commands.hybrid_command(name='play')
     async def _play(self, ctx: commands.Context, *, video_search: str):
@@ -177,7 +152,7 @@ class VideoController(commands.Cog):
         """
         vc = ctx.voice_client
         if not vc:
-            await ctx.invoke(self._connect)
+            await ctx.invoke(self._connect, from_play=True)
 
         if not video_search:
             return await ctx.send(
@@ -345,20 +320,38 @@ class VideoController(commands.Cog):
         player.volume = vol / 100
         await ctx.send(f"{emojis.get('sound_on')}  Set the volume to `{vol}`%.", delete_after=10)
 
-    @commands.hybrid_command(name="bassboost")
-    async def _bassboost(self, ctx: commands.Context):
+    async def apply_eq(self, ctx: commands.Context):
         vc = ctx.voice_client
-        if not vc or not vc.is_connected():
+        if not vc or not vc.is_connected:
+            return
+
+        player = self.get_player(ctx)
+        await player.apply_eq(ctx=ctx)
+
+    @commands.hybrid_command(name='eq')
+    async def _show_eq(self, ctx: commands.Context):
+        """Displays the equalizer menu.
+        
+        Params:
+        -------
+            ctx : commands.Context
+                The current context associated with a command.
+        """
+        vc = ctx.voice_client
+        if not vc or not vc.is_connected:
             return await ctx.send(
-                "I am not currently connected to voice!", delete_after=10)
+                "I am not currently playing anything!",
+                delete_after=10)
 
         player = self.get_player(ctx)
         try:
-            boosted = player.set_equalizer("bass_boost")
-        except ValueError as e:
-            return await ctx.send(f"Invalid preset: {e}")
+            await player.equalizer_message.delete()
+        except Exception as e:
+            print(e)
 
-        await ctx.send("Now bassboosting!" if boosted else "Boosting is off")
+        view = EqualizerView(self.bot, player.equalizer)
+        embed = view.equalizer.embed
+        player.equalizer_message = await ctx.send(embed=embed, view=view)
 
     @commands.hybrid_command(name="loopall")
     async def _loop_all(self, ctx: commands.Context):
@@ -371,7 +364,7 @@ class VideoController(commands.Cog):
         player = self.get_player(ctx)
         loop = player.video_playlist.set_loop_all()
 
-        message = "Now looping all" if loop else "Stopped looping"
+        message = "Now looping the playlist." if loop else "Stopped looping the playlist."
         await ctx.send(message)
 
     @commands.hybrid_command(name="loopone")
@@ -385,7 +378,7 @@ class VideoController(commands.Cog):
         player = self.get_player(ctx)
         loop = player.video_playlist.set_loop_one()
 
-        message = "Now looping the current video" if loop else "Stopped looping"
+        message = "Now looping the current video." if loop else "Stopped looping the video."
         await ctx.send(message)
 
     @commands.hybrid_command(name='removevideo', aliases=['rremove'])
@@ -424,13 +417,8 @@ class VideoController(commands.Cog):
         await ctx.send("Shuffled the playlist.", delete_after=10)
 
     @commands.hybrid_command(name='lyrics', aliases=['lyric'])
-    async def _lyrics(
-        self, 
-        ctx: commands.Context, 
-        *, 
-        video_search: Optional[str]):
-        """
-        Gets the lyrics for the current video or search for a video given a name.
+    async def _lyrics(self, ctx: commands.Context, *, video_search: Optional[str]):
+        """Gets the lyrics for the current video or search for a video given a name.
         
         Uses the text obtained through some-random-api's lyric function.
         
