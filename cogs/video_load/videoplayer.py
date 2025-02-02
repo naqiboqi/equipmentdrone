@@ -303,7 +303,7 @@ class VideoPlayer:
         for message in [self.now_playing_message, self.equalizer_message, self.playlist_message]:
             try:
                 await message.delete()
-            except discord.errors.NotFound:
+            except (AttributeError, discord.errors.NotFound):
                 pass
 
     def destroy(self, guild: discord.Guild):
