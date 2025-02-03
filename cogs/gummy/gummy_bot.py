@@ -5,7 +5,7 @@ import sys
 
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-#from ..utils import status
+from ..utils import status
 
 
 
@@ -19,7 +19,7 @@ class GummyBot(commands.Bot):
     @tasks.loop(hours=2)
     async def update_status_task(self):
         try:
-            game_status = f" with @Equipment Drone!"
+            game_status = f" {status.choose_game()}with @Equipment Drone!"
             await self.change_presence(
                 activity = discord.Game(name=game_status))
 

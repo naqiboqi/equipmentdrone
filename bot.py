@@ -25,7 +25,7 @@ class MyBot(commands.Bot):
     @tasks.loop(hours=2)
     async def update_status_task(self):
         try:
-            game_status = await status.choose_game()
+            game_status = status.choose_game()
             await self.change_presence(activity = discord.Game(name=game_status))
             print(f"I'm now playing {game_status}!")
         except TypeError as e:
