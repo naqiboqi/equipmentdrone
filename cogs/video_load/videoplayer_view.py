@@ -46,8 +46,7 @@ repeat_one = emojis.get("repeat_one")
 
 
 class VideoPlayerView(discord.ui.View):
-    """
-    A Discord UI View for media controls.
+    """A Discord UI View for media controls.
 
     This class provides an interactive interface where players can control a video player
     with actions such as pausing or playing, or skipping to the next or previous track.

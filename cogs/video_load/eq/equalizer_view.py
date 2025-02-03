@@ -1,3 +1,32 @@
+"""
+This module defines the `EqualizerView` class, which provides an interactive 
+Discord UI View for controlling the equalizer settings of a video player. 
+Users can select different equalizer presets through a dropdown interface to 
+adjust the audio filters applied to the playback.
+
+Key Features:
+- **Interactive Equalizer Controls**:
+    - Allows users to select and apply different equalizer presets.
+    - Displays updated embed with the new filter settings upon selection.
+
+- **Integration with Bot Commands**:
+    - Each selection triggers an update of the equalizer settings.
+    - Updates are seamlessly reflected in the ongoing video playback.
+
+### Classes:
+- **`EqualizerView`**:
+    Represents the interactive UI for video player equalizer controls. Provides:
+    - A dropdown menu to select different equalizer presets.
+    - Integration with the bot's equalizer settings and video playback system.
+
+### Dependencies:
+- **`discord`**: Provides UI elements and bot interaction capabilities.
+- **`discord.ext.commands`**: Enables integration with bot commands.
+- **`equalizer`**: Manages the equalizer filters and settings for video playback.
+"""
+
+
+
 import discord
 
 from discord.ext import commands
@@ -6,6 +35,18 @@ from .equalizer import Equalizer
 
 
 class EqualizerView(discord.ui.View):
+    """A Discord UI View for equalizer controls.
+
+    This class provides an interactive interface where players can control a video player equalizer
+    by selecting equalizer settings from a dropdown.
+
+    Attributes:
+    -----------
+        bot : commands.Bot
+            The bot instance.
+        equalizer : Equalizer
+            The equalizer with its filter options.
+    """
     def __init__(self, bot: commands.Bot, equalizer: Equalizer, timeout=None):
         super().__init__(timeout=timeout)
         self.bot = bot
