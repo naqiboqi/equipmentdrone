@@ -213,7 +213,7 @@ class VideoController(commands.Cog):
         player = self.get_player(ctx)
         view = PageView(
             title=f"{player.video_playlist}", 
-            items=player.video_playlist.get_upcoming(),
+            items=player.video_playlist.upcoming,
             max_items_per_page=30)
 
         player.playlist_message = await ctx.send(embed=view.pages[0], view=view)

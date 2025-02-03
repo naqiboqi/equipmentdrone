@@ -118,29 +118,6 @@ class VideoPlayer:
 
         self.bot.loop.create_task(self.player_loop())
 
-    async def prepare_replay_source(self):
-        try:
-            source = await Video.get_source(
-                ctx=self.ctx,
-                search=self.current.web_url,
-                loop=self.bot.loop,
-                options=self.equalizer.build_ffmpeg_options())
-            await self.video_playlist.replace_current(source)
-        except Exception as e:
-            print(f"Uh oh, there was an error processing the song: {e}")
-
-    async def after_play(self, error=None):
-        if error:
-            print(error)
-
-        if self.video_playlist.forward:
-            await self.show_player_details(elapsed_time=self.current.duration)
-
-        self.video_playlist.advance()
-        if self.current:
-            self.current.cleanup()
-            self.current = None
-
     async def player_loop(self):
         """Main loop responsible for managing the playback of video content in the playlist.
 
@@ -171,22 +148,38 @@ class VideoPlayer:
                 print(f"Error: The next video is not valid: {source}")
                 continue
 
-            new_source = await Video.get_source(
-                ctx=self.ctx,
-                search=source.web_url, 
-                loop=self.bot.loop, 
-                options=self.equalizer.build_ffmpeg_options())
-            await self.video_playlist.replace_current(new_source)
-
             start_time = time.perf_counter() - source.seek_time
             source.start(start_time, self.volume)
             self.guild.voice_client.play(
                 source, after=lambda e: 
                     asyncio.run_coroutine_threadsafe(self.after_play(e), self.bot.loop))
 
-            asyncio.create_task(self.prepare_replay_source())
+            await asyncio.create_task(self.prepare_replay_source())
             await self.show_player_details()
             await self.timer(self.current.start_time)
+
+    async def prepare_replay_source(self):
+        try:
+            new_source = await Video.get_source(
+                ctx=self.ctx,
+                search=self.current.web_url, 
+                loop=self.bot.loop, 
+                options=self.equalizer.build_ffmpeg_options())
+            await self.video_playlist.replace_current(new_source)
+        except Exception as e:
+            print(f"Error getting the replacement source: {e}")
+
+    async def after_play(self, error=None):
+        if error:
+            print(error)
+
+        if self.video_playlist.forward:
+            await self.show_player_details(elapsed_time=self.current.duration)
+
+        self.video_playlist.advance()
+        if self.current:
+            self.current.cleanup()
+            self.current = None
 
     async def timer(self, start_time: float):
         """Keeps track of the video's runtime, and calls update_player_details()
@@ -201,7 +194,7 @@ class VideoPlayer:
         """
         paused_time = 0.00
         try:
-            while True:
+            while self.current:
                 await asyncio.sleep(1.00)
                 if self.guild.voice_client.is_playing():
                     elapsed_time = time.perf_counter() - (start_time + paused_time)
@@ -209,8 +202,8 @@ class VideoPlayer:
                 elif self.paused:
                     paused_time += 1.00
                 else:
-                    elapsed_time = time.perf_counter() - (start_time + paused_time)
-                    await self.show_player_details(elapsed_time)
+                    # elapsed_time = time.perf_counter() - (start_time + paused_time)
+                    # await self.show_player_details(elapsed_time)
                     break
 
         except (AttributeError, discord.errors.NotFound):
