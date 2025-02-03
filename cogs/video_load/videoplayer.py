@@ -161,17 +161,18 @@ class VideoPlayer:
                 source, after=lambda e: 
                     asyncio.run_coroutine_threadsafe(self.after_play(e), self.bot.loop))
 
+            asyncio.create_task(self.prepare_replay_source())
             await self.show_player_details()
             await self.timer(self.current.start_time)
-            asyncio.create_task(self.prepare_replay_source())
 
     async def prepare_replay_source(self):
         try:
-            source = Video.get_source(
+            source = await Video.get_source(
                 ctx=self.ctx,
                 search=self.current.web_url,
                 loop=self.bot.loop,
                 options=self.equalizer.build_ffmpeg_options())
+            await self.video_playlist.replace_current(source)
         except Exception as e:
             print(f"Uh oh, there was an error processing the song: {e}")
 
