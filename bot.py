@@ -4,7 +4,7 @@ import os
 
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-from cogs.utils import status
+from cogs.utils import choose_game
 
 
 
@@ -25,7 +25,7 @@ class MyBot(commands.Bot):
     @tasks.loop(hours=2)
     async def update_status_task(self):
         try:
-            game_status = status.choose_game()
+            game_status = choose_game()
             await self.change_presence(activity = discord.Game(name=game_status))
             print(f"I'm now playing {game_status}!")
         except TypeError as e:
