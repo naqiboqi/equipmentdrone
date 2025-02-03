@@ -163,6 +163,17 @@ class VideoPlayer:
 
             await self.show_player_details()
             await self.timer(self.current.start_time)
+            asyncio.create_task(self.prepare_replay_source())
+
+    async def prepare_replay_source(self):
+        try:
+            source = Video.get_source(
+                ctx=self.ctx,
+                search=self.current.web_url,
+                loop=self.bot.loop,
+                options=self.equalizer.build_ffmpeg_options())
+        except Exception as e:
+            print(f"Uh oh, there was an error processing the song: {e}")
 
     async def after_play(self, error=None):
         if error:

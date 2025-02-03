@@ -134,9 +134,13 @@ class VideoPlaylist:
         self.ready.clear()
 
     def set_loop_one(self):
-        """Tells the player to replay the currently playing video, if it exists."""
+        """Tells the player to replay the currently playing video."""
         self.loop_all = False
         self.loop_one = not self.loop_one
+
+        if not self.now_playing:
+            if self.tail:
+                self.ready.set()
 
         return self.loop_one
 

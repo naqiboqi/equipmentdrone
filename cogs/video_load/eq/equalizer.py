@@ -1,3 +1,44 @@
+"""
+This module implements an audio player for a Discord bot, designed to handle media 
+playback and user interaction within a server (guild). It utilizes the `discord.py` 
+library for bot functionality and provides features like playlist management, 
+progress tracking, and detailed playback embeds.
+
+Key Features:
+- **Audio Playback**:
+    - Manage playback of playlistd audio sources.
+    - Support for pausing, resuming, and looping.
+    - Adjust playback volume dynamically.
+
+- **playlist Management**:
+    - Handle a playlist of `Video` objects for seamless playback.
+    - Add videos to the front of the playlist or in order of requests.
+
+- **Embed Generation**:
+    - Create real-time playback embeds displaying:
+        - Video title, URL, and thumbnail.
+        - Playback progress with a dynamic progress bar.
+        - Volume level and requester information.
+    - Update existing embeds as playback progresses.
+
+- **Asynchronous Operations**:
+    - Use asyncio for efficient non-blocking playlist and playback handling.
+    - Manage playback state and time tracking.
+
+### Classes:
+- **`Player`**:
+    Represents the media player for a Discord server. Manages:
+    - Playback control, including start, pause, resume, and loop.
+    - playlist operations and embed updates.
+    - Cleanup and resource management when playback ends.
+
+### Dependencies:
+- **`discord`**: For interacting with Discord APIs and sending embeds.
+- **`discord.ext`**: For Discord bot command usage.
+"""
+
+
+
 import discord
 
 from discord.ext import commands
@@ -11,7 +52,18 @@ level = emojis.get("elapsed_line")
 
 
 class Filter:
-    """"""
+    """Representation of a filter for ffmpeg equalizer settings.
+    
+    Attributes:
+    -----------
+        name : str
+            The name of the filter.
+        settings : str
+            The settings for the filter, shown as a string with values seperated by `:`.
+
+        For example:
+            `filter = Filter("Flat", "f=1:width_type=h:width=200:g=0")`
+        """
     def __init__(self, name: str, settings: str):
         self.name = name
         self.settings = settings
@@ -21,7 +73,7 @@ class Filter:
 
     @property
     def apply(self):
-        """The applicable equalizer string to pass to ffmpeg."""
+        """The applicable equalizer values to pass to ffmpeg as a string."""
         return f"equalizer={self.settings}"
 
     @property
@@ -30,7 +82,7 @@ class Filter:
         values = self.as_dict
 
         def display_gain(value, max_value: int=50, length: int=10):
-            """Displays a bar to show the gain level."""
+            """Returns a 'progress bar' to show the gain level for the current filter."""
             try:
                 value = float(value)
                 num_filled = int((value / max_value) * length)
