@@ -198,6 +198,10 @@ class VideoPlaylist:
         """Advances to next video to play depending on the playlist's current direction (`self.forward`)."""
         if not self.now_playing:
             return
+        
+        if self.loop_one:
+            self.ready.set()
+            return
 
         if self.forward:
             self.move_forward()
@@ -207,17 +211,10 @@ class VideoPlaylist:
         self.forward = True
 
     def move_forward(self):
-        """Moves to the next video in the playlist and sets it as the current.
-        
-        Loops the current video if `loop_one = True`, or replays the playlist
-        from the beginning if `loop_all = True` and the playlist is over.
-        """
-        if self.loop_one:
-            self.ready.set()
-            return
-
+        """Moves to the next video in the playlist and sets it as the current."""
         if self.now_playing == self.tail:
             self.ready.clear()
+            return
 
         self.now_playing = self.now_playing.next
         if not self.now_playing:
@@ -231,15 +228,7 @@ class VideoPlaylist:
         self.ready.set()
 
     def move_backward(self):
-        """Moves to the previous video in the playlist and sets it as the current.
-        
-        In the case that `loop_all = True` and the first video is playing, moves to the last video in the playlist.
-        Otherwise loops the current video if `loop_one = True`.
-        """
-        if self.loop_one:
-            self.ready.set()
-            return
-
+        """Moves to the previous video in the playlist."""
         self.now_playing = self.now_playing.prev
         if not self.now_playing:
             if self.loop_all:
