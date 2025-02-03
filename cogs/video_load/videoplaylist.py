@@ -212,10 +212,6 @@ class VideoPlaylist:
 
     def move_forward(self):
         """Moves to the next video in the playlist and sets it as the current."""
-        if self.now_playing == self.tail:
-            self.ready.clear()
-            return
-
         self.now_playing = self.now_playing.next
         if not self.now_playing:
             if self.loop_all:
@@ -276,7 +272,7 @@ class VideoPlaylist:
             current = current.next
 
     def remove(self, spot: int):
-        """Removes a video at the given spot in the playlist.
+        """Remove and returns the video at a given spot in the playlist.
         
         Raises an `IndexError` if no video exists at that spot.
         
