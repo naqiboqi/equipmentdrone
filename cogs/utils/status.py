@@ -1,5 +1,7 @@
 from random import choice
 
+
+
 async def choose_game():
     """Returns a random game for our wonderful bot to play!"""
     games = ["Deep Rock Galactic", "Control Ultimate Edition",

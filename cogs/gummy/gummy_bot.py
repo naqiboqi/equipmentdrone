@@ -1,32 +1,28 @@
 import aiohttp
 import discord
 import os
+import sys
 
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-from cogs.utils import status
+#from ..utils import status
 
 
 
-class MyBot(commands.Bot):
+class GummyBot(commands.Bot):
     """Representation of a Disord bot."""
     def __init__(self):
         super().__init__(command_prefix="!", intents=discord.Intents.all())
         self.inital_extensions = [
-            "battleship",
-            "connectfour",
-            "dnd",
-            "launch_gummy",
-            "settings",
-            "tictactoe",
-            "videocontroller",
         ]
 
     @tasks.loop(hours=2)
     async def update_status_task(self):
         try:
-            game_status = await status.choose_game()
-            await self.change_presence(activity = discord.Game(name=game_status))
+            game_status = f" with @Equipment Drone!"
+            await self.change_presence(
+                activity = discord.Game(name=game_status))
+
             print(f"I'm now playing {game_status}!")
         except TypeError as e:
             print(f"Error updating status: {e}")
@@ -43,6 +39,7 @@ class MyBot(commands.Bot):
                 print(f"Error loading {filename}: {e}")
 
     async def on_ready(self):
+        args = sys.argv
         print(f"\n{self.user.name} is now online!")
 
     @update_status_task.before_loop
@@ -56,9 +53,9 @@ class MyBot(commands.Bot):
 
 def main():
     load_dotenv()
-    TOKEN = os.getenv("DISCORD_TOKEN")
+    TOKEN = os.getenv("GUMMY_TOKEN")
 
-    bot = MyBot()
+    bot = GummyBot()
     bot.run(TOKEN)
 
 if __name__ == "__main__":
