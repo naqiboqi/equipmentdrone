@@ -6,3 +6,4 @@ The `utils` package. Includes interactive embeds containing log events and loadi
 from .eventlog import EventLog
 from .json_loader import JsonLoader
 from .page_view import PageView
+from .status import choose_game
