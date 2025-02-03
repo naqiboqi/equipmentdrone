@@ -1,6 +1,7 @@
 import discord
 import subprocess
 
+from typing import Optional
 from discord.ext import commands
 
 
@@ -8,17 +9,26 @@ from discord.ext import commands
 class LaunchGummy(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.gummy = None
+        self.gummy: subprocess.Popen[bytes] = None
     
     @commands.hybrid_command(name="gummy")
     async def _launch_gummy(self, ctx: commands.Context):
-        """Creates a beautiful gummy boy."""
+        """Creates a beautiful Gummy boy."""
         try:
-            subprocess.Popen(["Python", "python ./cogs/gummy/gummy_bot.py"])
+            self.gummy = subprocess.Popen(["Python", "./cogs/gummy/gummy_bot.py"])
             await ctx.send("Gummy is here!")
         except Exception as e:
             print(f"error making gummy :( {e}")
 
+
+    @commands.hybrid_command(name="killgummy")
+    async def _kill_gummy(self, ctx: commands.Context):
+        """Puts Gummy to sleep."""
+        if not self.gummy:
+            return await ctx.send("Gummy is asleep right now.", delete_after=10)
+        
+        self.gummy.terminate()
+        await ctx.send("Goodbye gummy!", delete_after=10) 
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(LaunchGummy(bot))
