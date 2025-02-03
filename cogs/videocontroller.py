@@ -134,8 +134,8 @@ class VideoController(commands.Cog):
             await channel.connect()
             if not from_play:
                 return await ctx.send(f"Connected to voice channel `{channel.name}`", delete_after=10)
-
-        await ctx.send("You must be in a voice channel!", delete_after=10)
+        else:
+            await ctx.send("You must be in a voice channel!", delete_after=10)
 
     @commands.hybrid_command(name='play')
     async def _play(self, ctx: commands.Context, *, video_search: str):

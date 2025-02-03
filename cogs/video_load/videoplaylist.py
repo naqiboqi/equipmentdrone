@@ -140,6 +140,7 @@ class VideoPlaylist:
 
         if not self.now_playing:
             if self.tail:
+                self.now_playing = self.tail
                 self.ready.set()
 
         return self.loop_one
