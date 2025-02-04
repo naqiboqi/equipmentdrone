@@ -7,7 +7,12 @@ import sys
 
 from typing import Optional
 from discord.ext import commands
-from cogs.utils.errors import gummy_errors
+from cogs.utils.errors.gummy_errors import (
+    GummyAlreadyRunning,
+    GummyNotRunning, 
+    GummyInitializeError,
+    InvalidGummyMessageChannel
+)
 
 
 
@@ -72,9 +77,9 @@ class LaunchGummy(commands.Cog):
                 if channel:
                     self.gummy.stdin.write(f"{channel.name}:{message}\n")
                 else:
-                    raise ValueError("Could not find channel!")
+                    raise InvalidGummyMessageChannel("Could not find channel to send!")
                 self.gummy.stdin.flush()
-            except Exception as e:
+            except InvalidGummyMessageChannel as e:
                 print(f"Error sending message to Gummy: {e}")
         else:
             print("Can't send message to Gummy, he is not online!")
@@ -88,10 +93,10 @@ class LaunchGummy(commands.Cog):
     @commands.hybrid_command(name="gummy")
     async def _launch_gummy(self, ctx: commands.Context):
         """Creates a beautiful Gummy boy."""
-        if self.gummy_active:
-            return await ctx.send("Gummy is already running!", delete_after=10)
-
         try:
+            if self.gummy_active:
+                raise GummyAlreadyRunning("Gummy is running already!")
+
             env = {**os.environ, "PYTHONUNBUFFERED": "1"}
             self.gummy = subprocess.Popen(
                 [sys.executable, "-m", "cogs.gummy.gummy_bot"],
@@ -103,23 +108,34 @@ class LaunchGummy(commands.Cog):
                 universal_newlines=True,
                 env=env)
 
-            await ctx.send("Gummy is here!", delete_after=10)
+        except (GummyAlreadyRunning, GummyInitializeError) as e:
+            print(e)
+            return await ctx.send(e, delete_after=10)
 
-            asyncio.create_task(self.print_message(self.gummy.stdout, "[Gummy]"))
-            asyncio.create_task(self.print_message(self.gummy.stderr, "[Gummy]"))
-
-        except Exception as e:
-            message = f"Error launching Gummy {e}"
-            print(message)
-            await ctx.send(message, delete_after=10)
+        asyncio.create_task(self.print_message(self.gummy.stdout, "[Gummy]"))
+        asyncio.create_task(self.print_message(self.gummy.stderr, "[Gummy]"))
+        await ctx.send("Gummy is here!", delete_after=10)
 
     @commands.hybrid_command(name="killgummy")
     async def _kill_gummy(self, ctx: commands.Context):
         """Puts Gummy to sleep."""
-        if not self.gummy:
-            return await ctx.send("Gummy is asleep right now.", delete_after=10)
+        try:
+            if not self.gummy_active:
+                raise GummyNotRunning("Gummy is not running!")
+        except GummyNotRunning as e:
+            print(e)
+            return await ctx.send(e, delete_after=10)
 
         self.gummy.terminate()
+        print("Putting Gummy to sleep....")
+
+        try:
+            self.gummy.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            self.gummy.kill()
+            print("Gummy would not go quietly....")
+
+        self.gummy = None
         await ctx.send("Goodbye gummy!", delete_after=10) 
 
 
