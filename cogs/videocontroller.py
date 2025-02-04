@@ -190,7 +190,8 @@ class VideoController(commands.Cog):
 
         player = self.get_player(ctx)
         try:
-            await player.now_playing_message.delete()
+            if player.current:
+                await player.now_playing_message.delete()
         except Exception as e:
             print(e)
 
