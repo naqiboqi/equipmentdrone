@@ -1,4 +1,5 @@
 import aiohttp
+import asyncio
 import discord
 import os
 import sys
@@ -6,6 +7,7 @@ import sys
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
 from ..utils import choose_game
+from ..utils.errors import InvalidGummyMessage, InvalidGummyMessageChannel
 
 
 
@@ -14,7 +16,6 @@ class GummyBot(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix="?", intents=discord.Intents.all())
         self.inital_extensions = [
-            "fun",
             "gummy_settings"
         ]
 
@@ -22,12 +23,35 @@ class GummyBot(commands.Bot):
     async def update_status_task(self):
         try:
             game_status = f"{choose_game()} with @Equipment Drone!"
-            await self.change_presence(
-                activity = discord.Game(name=game_status))
+            await self.change_presence(activity = discord.Game(name=game_status))
 
-            print(f"I'm now playing {game_status}!")
+            print(f"I'm now playing {game_status}")
         except TypeError as e:
             print(f"Error updating status: {e}")
+
+    async def listen_for_messages(self):
+        while True:
+            try:
+                message = (await asyncio.to_thread(sys.stdin.readline)).strip()
+                if not message:
+                    continue
+
+                message_data = message.split(":")
+                if len(message_data) == 2:
+                    [channel_name, command] = message_data
+                else:
+                    raise InvalidGummyMessage
+
+                if command == "ahoy":
+                    channel = discord.utils.get(self.get_all_channels(), name=channel_name)
+                    if channel:
+                        await channel.send("Ahoy! 🏴‍☠️")
+                    else:
+                        raise InvalidGummyMessageChannel
+
+                print(f"Gummy received command: {command}")
+            except InvalidGummyMessage as e:
+                print(f"[Gummy Error] {e}")
 
     async def setup_hook(self):
         self.session = aiohttp.ClientSession()
@@ -40,8 +64,9 @@ class GummyBot(commands.Bot):
             except commands.errors.ExtensionNotFound as e:
                 print(f"Error loading {filename}: {e}")
 
+        self.loop.create_task(self.listen_for_messages())
+
     async def on_ready(self):
-        args = sys.argv
         print(f"\n{self.user.name} is now online!")
 
     @update_status_task.before_loop
@@ -59,6 +84,7 @@ def main():
 
     bot = GummyBot()
     bot.run(TOKEN)
+
 
 if __name__ == "__main__":
     main()
