@@ -10,6 +10,7 @@
 /cogs/gummy/gummy_cogs/__pycache__
 /cogs/tictactoe_game/__pycache__
 /cogs/utils/__pycache__
+/cogs/utils/errors/__pycache__
 /cogs/video_load/__pycache__
 /cogs/video_load/eq/__pycache__
 /cogs/dnd_game/__pycache__
