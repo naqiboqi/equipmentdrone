@@ -29,6 +29,10 @@ class GummyBot(commands.Bot):
         except TypeError as e:
             print(f"Error updating status: {e}")
 
+    @update_status_task.before_loop
+    async def before_update_status(self):
+        await self.wait_until_ready()
+
     async def listen_for_messages(self):
         while True:
             try:
@@ -40,14 +44,15 @@ class GummyBot(commands.Bot):
                 if len(message_data) == 2:
                     [channel_name, command] = message_data
                 else:
-                    raise InvalidGummyMessage
+                    raise InvalidGummyMessage(f"Message is missing data {":".join(message_data)}")
 
                 if command == "ahoy":
                     channel = discord.utils.get(self.get_all_channels(), name=channel_name)
                     if channel:
                         await channel.send("Ahoy! 🏴‍☠️")
                     else:
-                        raise InvalidGummyMessageChannel
+                        raise InvalidGummyMessageChannel(
+                            f"Could not find channel to send message {channel_name}")
 
                 print(f"Gummy received command: {command}")
             except InvalidGummyMessage as e:
@@ -68,10 +73,6 @@ class GummyBot(commands.Bot):
 
     async def on_ready(self):
         print(f"\n{self.user.name} is now online!")
-
-    @update_status_task.before_loop
-    async def before_update_status(self):
-        await self.wait_until_ready()
 
     async def close(self):
         await super().close()
