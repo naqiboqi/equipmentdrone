@@ -29,9 +29,9 @@ class InvalidGummyMessage(GummyMessageError):
     """Raised when an invalid message is sent to the Gummy process."""
 
 
-class InvalidGummyMessage(GummyMessageError):
-    """Raised when an invalid message is sent to the Gummy process."""
+class InvalidGummyOutput(GummyMessageError):
+    """Raised when an invalid message is sent from the Gummy process."""
 
 
 class InvalidGummyMessageChannel(GummyMessageError):
-    """Raised when attempting to send a message to an invalid channel."""
+    """Raised when attempting to send a message to an invalid."""
