@@ -77,7 +77,7 @@ class LaunchGummy(commands.Cog):
                 if channel:
                     self.gummy.stdin.write(f"{channel.name}:{message}\n")
                 else:
-                    raise InvalidGummyMessageChannel("Could not find channel to send!")
+                    self.gummy.stdin.write(message)
                 self.gummy.stdin.flush()
             except InvalidGummyMessageChannel as e:
                 print(f"Error sending message to Gummy: {e}")
@@ -114,6 +114,7 @@ class LaunchGummy(commands.Cog):
 
         asyncio.create_task(self.print_message(self.gummy.stdout, "[Gummy]"))
         asyncio.create_task(self.print_message(self.gummy.stderr, "[Gummy]"))
+
         await ctx.send("Gummy is here!", delete_after=10)
 
     @commands.hybrid_command(name="killgummy")

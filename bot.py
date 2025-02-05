@@ -26,7 +26,12 @@ class MyBot(commands.Bot):
     async def update_status_task(self):
         try:
             game_status = choose_game()
-            await self.change_presence(activity = discord.Game(name=game_status))
+            await self.change_presence(activity=discord.Game(name=game_status))
+
+            gummy_cog = self.get_cog("LaunchGummy")
+            if gummy_cog.gummy_active:
+                await gummy_cog.send_message(f"change_presence={game_status}")
+
             print(f"I'm now playing {game_status}!")
         except TypeError as e:
             print(f"Error updating status: {e}")

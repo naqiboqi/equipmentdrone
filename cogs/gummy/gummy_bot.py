@@ -16,7 +16,11 @@ class GummyBot(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix="?", intents=discord.Intents.all())
         self.inital_extensions = [
-            "gummy_settings"
+            "battleship",
+            "connectfour",
+            "dnd",
+            "tictactoe",
+            "videocontroller"
         ]
 
     @tasks.loop(hours=2)
@@ -40,12 +44,19 @@ class GummyBot(commands.Bot):
                 if not message:
                     continue
 
+                if "change_presense=" in message:
+                    game_status = message.split("=")[1]
+                    return await self.change_presence(activity=discord.Game(name=game_status))
+
                 message_data = message.split(":")
                 if len(message_data) == 2:
                     [channel_name, command] = message_data
+                elif len(message_data) == 1:
+                    command = message_data[0]
                 else:
                     raise InvalidGummyMessage(f"Message is missing data {":".join(message_data)}")
 
+                await asyncio.sleep(1.5)
                 if command == "ahoy":
                     channel = discord.utils.get(self.get_all_channels(), name=channel_name)
                     if channel:
@@ -63,9 +74,10 @@ class GummyBot(commands.Bot):
         self.update_status_task.start()
 
         print("Loading extensions...\n")
+        await self.load_extension("cogs.gummy.gummy_settings")
         for filename in self.inital_extensions:
             try:
-                await self.load_extension(f"cogs.gummy.gummy_cogs.{filename}")
+                await self.load_extension(f"cogs.{filename}")
             except commands.errors.ExtensionNotFound as e:
                 print(f"Error loading {filename}: {e}")
 
