@@ -12,6 +12,7 @@ class MyBot(commands.Bot):
     """Representation of a Disord bot."""
     def __init__(self):
         super().__init__(command_prefix="!", intents=discord.Intents.all())
+        self.game_status: str = None
         self.inital_extensions = [
             "battleship",
             "connectfour",
@@ -27,9 +28,10 @@ class MyBot(commands.Bot):
         try:
             game_status = choose_game()
             await self.change_presence(activity=discord.Game(name=game_status))
+            self.game_status = game_status
 
             gummy_cog = self.get_cog("LaunchGummy")
-            if gummy_cog.gummy_active:
+            if gummy_cog and gummy_cog.gummy_active:
                 await gummy_cog.send_message(f"change_presence={game_status}")
 
             print(f"I'm now playing {game_status}!")

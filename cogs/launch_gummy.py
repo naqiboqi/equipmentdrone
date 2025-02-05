@@ -73,11 +73,13 @@ class LaunchGummy(commands.Cog):
                 The message to send.
         """
         if self.gummy_active:
+            print("active")
             try:
                 if channel:
                     self.gummy.stdin.write(f"{channel.name}:{message}\n")
                 else:
-                    self.gummy.stdin.write(message)
+                    self.gummy.stdin.write(f"{message}\n")
+                    print(f"writing message{message}")
                 self.gummy.stdin.flush()
             except InvalidGummyMessageChannel as e:
                 print(f"Error sending message to Gummy: {e}")
@@ -114,6 +116,9 @@ class LaunchGummy(commands.Cog):
 
         asyncio.create_task(self.print_message(self.gummy.stdout, "[Gummy]"))
         asyncio.create_task(self.print_message(self.gummy.stderr, "[Gummy]"))
+        
+        await asyncio.sleep(2)
+        await self.send_message(message=f"change_presence={self.bot.game_status}")
 
         await ctx.send("Gummy is here!", delete_after=10)
 
