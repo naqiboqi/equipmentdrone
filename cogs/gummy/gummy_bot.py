@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 import discord
+import json
 import os
 import sys
 
@@ -23,39 +24,44 @@ class GummyBot(commands.Bot):
         ]
 
     async def listen_for_messages(self):
+        """Continuously listens for messages sent to Gummy via stdin."""
+        print("Listening.....")
         while True:
             try:
                 message = (await asyncio.to_thread(sys.stdin.readline)).strip()
                 if not message:
-                    print("Did not receive message!")
+                    print("Did not receive message from Gummy!")
+                    continue
 
-                if "change_presence=" in message:
-                    game_status = message.split("=")[1]
-                    return await self.change_presence(activity=discord.Game(name=game_status))
+                try:
+                    message_data = json.loads(message)
+                except json.JSONDecodeError as e:
+                    raise InvalidGummyMessage(f"Invalid message format: {message} caused error {e}.")
 
-                message_data = message.split(":")
-                if len(message_data) == 2:
-                    [channel_name, command] = message_data
-                elif len(message_data) == 1:
-                    command = message_data[0]
-                else:
-                    raise InvalidGummyMessage(f"Message is missing data {":".join(message_data)}")
+                match(message_data.get("type")):
+                    case "presence":
+                        status = message_data.get("content")
+                        await self.change_presence(activity=discord.Game(name=status))
+                    case "command":
+                        channel = self.get_channel(int(message_data.get("channel_id")))
+                        if not channel:
+                            raise InvalidGummyMessageChannel("Invalid channel id.")
 
-                await asyncio.sleep(1.5)
-                if command == "ahoy":
-                    channel = discord.utils.get(self.get_all_channels(), name=channel_name)
-                    if channel:
-                        await channel.send("Ahoy! 🏴‍☠️")
-                    else:
-                        raise InvalidGummyMessageChannel(
-                            f"Could not find channel to send message {channel_name}")
+                        content = message_data.get("content")
+                        if content == "ahoy":
+                            await channel.send("Ahoy! 🏴‍☠️")
+                    case "message":
+                        channel = self.get_channel(int(message_data.get("channel_id")))
+                        if not channel:
+                            raise InvalidGummyMessageChannel("Invalid channel id.")
+                        await channel.send(message_data.get("content"))
 
-                print(f"Gummy received command: {command}")
             except InvalidGummyMessage as e:
                 print(f"[Gummy Error] {e}")
 
     async def setup_hook(self):
         self.session = aiohttp.ClientSession()
+        self.loop.create_task(self.listen_for_messages())
 
         print("Loading extensions...\n")
         await self.load_extension("cogs.gummy.gummy_settings")
@@ -64,8 +70,6 @@ class GummyBot(commands.Bot):
                 await self.load_extension(f"cogs.{filename}")
             except commands.errors.ExtensionNotFound as e:
                 print(f"Error loading {filename}: {e}")
-
-        self.loop.create_task(self.listen_for_messages())
 
     async def on_ready(self):
         print(f"\n{self.user.name} is now online!")

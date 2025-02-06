@@ -34,4 +34,4 @@ class InvalidGummyOutput(GummyMessageError):
 
 
 class InvalidGummyMessageChannel(GummyMessageError):
-    """Raised when attempting to send a message to an invalid."""
+    """Raised when attempting to send a message to an invalid channel."""

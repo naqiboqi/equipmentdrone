@@ -1,6 +1,7 @@
 import asyncio
 import discord
 import io
+import json
 import os
 import subprocess
 import sys
@@ -36,20 +37,18 @@ class LaunchGummy(commands.Cog):
         return self.gummy and self.gummy.poll() is None
 
     async def print_message(self, stream: io.TextIOWrapper, prefix: str):
-        """Receives and prints a message from the Gummy subprocess' stdin.
-        
+        """Reads and prints output from the Gummy process. 
+        Runs continously while the process is active.
+
         Params:
         -------
-            stream : TextIOWrapper
-                The stream to read from.
-            prefix : str
-                Prefix denoting the type of message:
-                
-                    [Gummy]
-                    
-                    [Gummy [message_here]]
-                    
-                    [Gummy Error]
+        stream : TextIOWrapper
+            The stream to read from (stdout or stderr of Gummy's process).
+        prefix : str
+            A prefix to label the output type. Example outputs:
+
+            - `[Gummy] Gummy is now online!`
+            - `[Gummy Error] Could not read message`
         """
         if not stream:
             print(f"{prefix} stream is None!")
@@ -62,27 +61,29 @@ class LaunchGummy(commands.Cog):
 
             print(f"{prefix} {line.strip()}")
 
-    async def send_message(self, message: str, channel: Optional[discord.abc.Messageable]=None):
-        """Sends a message to Gummy and tells him the channel the message is from.
+    async def send_message(
+        self, 
+        message_type: str, 
+        content: Optional[str]=None, 
+        channel: Optional[discord.TextChannel]=None):
+        """
+        Sends a message to Gummy, optionally specifying a channel.
         
         Params:
         -------
-            channel : MessagableChannel
-                The channel that the message came from, if any.
             message : str
-                The message to send.
+                The message to send to Gummy.
+            channel : Optional[discord.TextChannel]
+                The channel where the message originated, if applicable.
         """
         if self.gummy_active:
-            print("active")
-            try:
-                if channel:
-                    self.gummy.stdin.write(f"{channel.name}:{message}\n")
-                else:
-                    self.gummy.stdin.write(f"{message}\n")
-                    print(f"writing message{message}")
-                self.gummy.stdin.flush()
-            except InvalidGummyMessageChannel as e:
-                print(f"Error sending message to Gummy: {e}")
+            message_data = {"type" : message_type, "content" : content}
+            if channel:
+                message_data["channel_id"] = str(channel.id)
+
+            message_json = json.dumps(message_data)
+            self.gummy.stdin.write(f"{message_json}\n")
+            self.gummy.stdin.flush()
         else:
             print("Can't send message to Gummy, he is not online!")
 
@@ -90,11 +91,11 @@ class LaunchGummy(commands.Cog):
     async def _say_ahoy(self, ctx: commands.Context):
         """Greets the user!"""
         await ctx.send("Ahoy! 🏴‍☠️")
-        await self.send_message(channel=ctx.channel, message="ahoy")
+        await self.send_message(message_type="command", content="ahoy", channel=ctx.channel)
 
     @commands.hybrid_command(name="gummy")
     async def _launch_gummy(self, ctx: commands.Context):
-        """Creates a beautiful Gummy boy."""
+        """Creates a beautiful Gummy boy!"""
         try:
             if self.gummy_active:
                 raise GummyAlreadyRunning("Gummy is running already!")
@@ -116,14 +117,14 @@ class LaunchGummy(commands.Cog):
 
         asyncio.create_task(self.print_message(self.gummy.stdout, "[Gummy]"))
         asyncio.create_task(self.print_message(self.gummy.stderr, "[Gummy]"))
-        
+
         await asyncio.sleep(2)
-        await self.send_message(message=f"change_presence={self.bot.game_status}")
+        await self.send_message(message_type="presence", content=self.bot.game_status)
 
         await ctx.send("Gummy is here!", delete_after=10)
 
-    @commands.hybrid_command(name="killgummy")
-    async def _kill_gummy(self, ctx: commands.Context):
+    @commands.hybrid_command(name="sleepgummy")
+    async def _sleep_gummy(self, ctx: commands.Context):
         """Puts Gummy to sleep."""
         try:
             if not self.gummy_active:
@@ -132,14 +133,14 @@ class LaunchGummy(commands.Cog):
             print(e)
             return await ctx.send(e, delete_after=10)
 
-        self.gummy.terminate()
         print("Putting Gummy to sleep....")
+        self.gummy.terminate()
 
         try:
             self.gummy.wait(timeout=5)
         except subprocess.TimeoutExpired:
-            self.gummy.kill()
             print("Gummy would not go quietly....")
+            self.gummy.kill()
 
         self.gummy = None
         await ctx.send("Goodbye gummy!", delete_after=10) 
