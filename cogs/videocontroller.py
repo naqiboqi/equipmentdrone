@@ -189,9 +189,10 @@ class VideoController(commands.Cog):
                 delete_after=10)
 
         player = self.get_player(ctx)
+        if not player.current:
+            return await ctx.send("Nothing is playing right now...", delete_after=10)
         try:
-            if player.current:
-                await player.now_playing_message.delete()
+            await player.now_playing_message.delete()
         except Exception as e:
             print(e)
 
