@@ -34,7 +34,7 @@
 
 ![alt text](/images/env.png)
 
-After completing all of the above steps, the bot's directory should look like this (not including `__pycache__`)"
+After completing all of the above steps, the bot's directory should look like this (not including any `__pycache__`)"
 
 ![alt text](/images/dir.png)
 
@@ -50,15 +50,18 @@ After completing all of the above steps, the bot's directory should look like th
 
 **Commands**
 
-The bot supports stardard prefix commands and ~~slash~~ hybrid commands.
+The bot supports stardard prefix commands and hybrid commands.
 
+I prefer hybrid commands, as only one bot will respond, and Discord will show a help string for the command when typing `/`.
 
-
-Personally I prefer hybrid commands, as Discord will show a help string for the command after you type the `/`:
+You can also see all of the possible hybrid commands for any bot by typing `/[bot_name_here]`
 
 ![alt text](/images/all_slash.png)
 
-Alternatively you can invoke commands via the prefix `!`
+Alternatively you can invoke commands via the bot's specific prefix `!`
+
+Note that this will not allow to see the available commands, and if there are multiple bots on the server
+that share this prefix `!` (and the command name), then *both* bots will respond.
 
 
 #### Useful things
@@ -70,9 +73,8 @@ Contains everything you need to know about the `discord.py` library
 
 #### To-Do
 -----------
-- [ ] Add seeking to media controls
-- [ ] Add looping and play previous to media controls
-- [ ] Host bot on a computer that is not my daily driver
-- [ ] Make the bot smarter when attacking in battleship
+- [ ] Add seeking to media controls (this is difficult....)
+- [X] Add looping and play previous to media controls
+- [X] Make the bot smarter when attacking in battleship
 - [X] Add grid labels to the board in battleship
 - [X] Don't hardcode bot messages
