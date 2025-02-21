@@ -34,7 +34,7 @@
 
 ![alt text](/images/env.png)
 
-After completing all of the above steps, the bot's directory should look like this (not including any `__pycache__`)"
+After completing all of the above steps, the bot's directory should look like this (not including any `__pycache__`)
 
 ![alt text](/images/dir.png)
 
