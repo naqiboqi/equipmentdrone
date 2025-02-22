@@ -143,7 +143,8 @@ class LaunchGummy(commands.Cog):
             self.gummy.kill()
 
         self.gummy = None
-        await ctx.send("Goodbye gummy!", delete_after=10) 
+        await ctx.send("Goodbye gummy!", delete_after=10)
+        print("Goodbye Gummy!")
 
 
 async def setup(bot: commands.Bot):

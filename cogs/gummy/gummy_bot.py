@@ -61,7 +61,6 @@ class GummyBot(commands.Bot):
 
     async def setup_hook(self):
         self.session = aiohttp.ClientSession()
-        self.loop.create_task(self.listen_for_messages())
 
         print("Loading extensions...\n")
         await self.load_extension("cogs.gummy.gummy_settings")
@@ -72,6 +71,7 @@ class GummyBot(commands.Bot):
                 print(f"Error loading {filename}: {e}")
 
     async def on_ready(self):
+        self.loop.create_task(self.listen_for_messages())
         print(f"\n{self.user.name} is now online!")
 
     async def close(self):
