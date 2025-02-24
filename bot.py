@@ -1,6 +1,7 @@
 import aiohttp
 import discord
 import os
+import subprocess
 
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
@@ -20,8 +21,7 @@ class MyBot(commands.Bot):
             "launch_gummy",
             "settings",
             "tictactoe",
-            "videocontroller",
-        ]
+            "wavelink_controller"]
 
     @tasks.loop(hours=2)
     async def update_status_task(self):
@@ -40,7 +40,6 @@ class MyBot(commands.Bot):
 
     async def setup_hook(self):
         self.session = aiohttp.ClientSession()
-        self.update_status_task.start()
 
         print("Loading extensions...\n")
         for filename in self.inital_extensions:
@@ -50,6 +49,7 @@ class MyBot(commands.Bot):
                 print(f"Error loading {filename}: {e}")
 
     async def on_ready(self):
+        self.update_status_task.start()
         print(f"\n{self.user.name} is now online!")
 
     @update_status_task.before_loop
