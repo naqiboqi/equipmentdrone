@@ -1,3 +1,8 @@
+### **Equipment Drone**
+A Discord.py bot that can play music, games and roll dice! Let the Equipment Drone spice up your server life! 🎶🕹️🪩
+
+
+
 #### Prerequisites:
 -------------------
 
